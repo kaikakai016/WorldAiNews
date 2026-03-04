@@ -3,6 +3,23 @@ from concurrent.futures import ThreadPoolExecutor
 from config import RSS_FEEDS, NEWS_API_KEY
 from difflib import SequenceMatcher
 
+def get_image_from_entry(entry):
+    if hasattr(entry, 'media_content') and entry.media_content:
+        for m in entry.media_content:
+            if m.get('type', '').startswith('image') or m.get('url', '').endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                return m.get('url')
+    if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
+        return entry.media_thumbnail[0].get('url')
+    if hasattr(entry, 'enclosures') and entry.enclosures:
+        for enc in entry.enclosures:
+            if enc.get('type', '').startswith('image'):
+                return enc.get('href') or enc.get('url')
+    if hasattr(entry, 'links'):
+        for link in entry.links:
+            if link.get('type', '').startswith('image'):
+                return link.get('href')
+    return None
+
 def fetch_single_feed(feed_url):
     try:
         socket.setdefaulttimeout(5)
@@ -10,7 +27,8 @@ def fetch_single_feed(feed_url):
         source_name = feed.feed.get('title', feed_url)
         results = []
         for entry in feed.entries[:3]:
-            results.append({'title': entry.get('title', ''), 'summary': entry.get('summary', entry.get('description', '')), 'link': entry.get('link', ''), 'source': source_name, 'published': entry.get('published', '')})
+            image = get_image_from_entry(entry)
+            results.append({'title': entry.get('title', ''), 'summary': entry.get('summary', entry.get('description', '')), 'link': entry.get('link', ''), 'source': source_name, 'published': entry.get('published', ''), 'image': image})
         return results
     except Exception as e:
         print("Feed error: " + str(e))
@@ -38,7 +56,7 @@ def fetch_newsapi_headlines():
         data = response.json()
         articles = []
         for article in data.get('articles', []):
-            articles.append({'title': article.get('title', ''), 'summary': article.get('description', ''), 'link': article.get('url', ''), 'source': article.get('source', {}).get('name', 'NewsAPI'), 'published': article.get('publishedAt', '')})
+            articles.append({'title': article.get('title', ''), 'summary': article.get('description', ''), 'link': article.get('url', ''), 'source': article.get('source', {}).get('name', 'NewsAPI'), 'published': article.get('publishedAt', ''), 'image': article.get('urlToImage')})
         return articles
     except Exception as e:
         print("NewsAPI error: " + str(e))
