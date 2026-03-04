@@ -7,47 +7,40 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 def analyze_story_group(news_group):
     """Analyze a group of news items covering the same story from different sources"""
     
-    sources_text = "\n".join([
-        f"📰 {item['source']}: \"{item['title']}\"
-   {item['summary'][:200] if item['summary'] else ''}\n   🔗 {item['link']}"
-        for item in news_group
-    ])
+    sources_lines = []
+    for item in news_group:
+        source = item['source']
+        title = item['title']
+        summary = item['summary'][:200] if item['summary'] else ''
+        link = item['link']
+        sources_lines.append("Source: " + source + "\nTitle: " + title + "\nSummary: " + summary + "\nLink: " + link + "\n")
     
+    sources_text = "\n".join(sources_lines)
     source_names = ", ".join([item['source'] for item in news_group])
-    
-    prompt = f"""
-You are analyzing the SAME news story as reported by {len(news_group)} different media sources.
+    source_links = " | ".join([item['link'] for item in news_group[:3]])
+    count = len(news_group)
 
-Here are the reports:
-
-{sources_text}
-
-Your task: Create an independent, neutral Telegram post that:
-1. Identifies the CORE FACTS confirmed by ALL sources
-2. Notes HOW EACH SOURCE frames the story differently
-3. Provides an INDEPENDENT CONCLUSION based on all perspectives
-
-Format your response EXACTLY like this:
-
-🌍 <b>ТЕМА: [One line topic in Russian]</b>
-📊 Покрыто источниками: {len(news_group)} ({source_names})
-
-{chr(10).join([f"📰 {item['source']}: [one sentence summary]" for item in news_group])}
-
-✅ <b>ПОДТВЕРЖДЕНО ВСЕМИ:</b>
-• [Confirmed fact 1]
-• [Confirmed fact 2]
-
-🔍 <b>РАЗЛИЧИЯ В ПОДАЧЕ:</b>
-• [How sources differ in framing]
-
-🧠 <b>НЕЗАВИСИМЫЙ ВЫВОД:</b>
-[2-3 sentences neutral conclusion]
-
-🔗 Источники: {" | ".join([item['link'] for item in news_group[:3]])}
-
-#WorldNews #[relevant tag]
-"""
+    prompt = (
+        "You are analyzing the SAME news story as reported by " + str(count) + " different media sources.\n\n"
+        "Here are the reports:\n\n" + sources_text + "\n\n"
+        "Your task: Create an independent, neutral Telegram post that:\n"
+        "1. Identifies the CORE FACTS confirmed by ALL sources\n"
+        "2. Notes HOW EACH SOURCE frames the story differently\n"
+        "3. Provides an INDEPENDENT CONCLUSION based on all perspectives\n\n"
+        "Format your response EXACTLY like this:\n\n"
+        "🌍 ТЕМА: [One line topic in Russian]\n"
+        "📊 Покрыто источниками: " + str(count) + " (" + source_names + ")\n\n"
+        "[For each source write: 📰 SourceName: one sentence summary]\n\n"
+        "✅ ПОДТВЕРЖДЕНО ВСЕМИ:\n"
+        "• [Confirmed fact 1]\n"
+        "• [Confirmed fact 2]\n\n"
+        "🔍 РАЗЛИЧИЯ В ПОДАЧЕ:\n"
+        "• [How sources differ in framing]\n\n"
+        "🧠 НЕЗАВИСИМЫЙ ВЫВОД:\n"
+        "[2-3 sentences neutral conclusion]\n\n"
+        "🔗 Источники: " + source_links + "\n\n"
+        "#WorldNews #[relevant tag]"
+    )
     
     try:
         response = client.chat.completions.create(
@@ -62,31 +55,31 @@ Format your response EXACTLY like this:
         return response.choices[0].message.content
         
     except Exception as e:
-        print(f"AI processing error: {e}")
+        print("AI processing error: " + str(e))
         return None
 
 def process_news_item(news_item):
     """Fallback: Process a single news item"""
     
-    prompt = f"""
-Title: {news_item['title']}
-Source: {news_item['source']}
-Content: {news_item['summary']}
-Link: {news_item['link']}
+    title = news_item['title']
+    source = news_item['source']
+    summary = news_item['summary']
+    link = news_item['link']
 
-Create a neutral, factual news post for a Telegram channel in this format:
-
-📌 [One sentence factual headline]
-
-📋 FACTS:
-• [Fact 1]
-• [Fact 2]
-• [Fact 3]
-
-🔗 Source: {news_item['source']} | {news_item['link']}
-
-#WorldNews #[relevant tag]
-"""
+    prompt = (
+        "Title: " + title + "\n"
+        "Source: " + source + "\n"
+        "Content: " + summary + "\n"
+        "Link: " + link + "\n\n"
+        "Create a neutral, factual news post for a Telegram channel in this format:\n\n"
+        "📌 [One sentence factual headline]\n\n"
+        "📋 FACTS:\n"
+        "• [Fact 1]\n"
+        "• [Fact 2]\n"
+        "• [Fact 3]\n\n"
+        "🔗 Source: " + source + " | " + link + "\n\n"
+        "#WorldNews #[relevant tag]"
+    )
     
     try:
         response = client.chat.completions.create(
@@ -101,5 +94,5 @@ Create a neutral, factual news post for a Telegram channel in this format:
         return response.choices[0].message.content
         
     except Exception as e:
-        print(f"AI processing error: {e}")
+        print("AI processing error: " + str(e))
         return None
