@@ -21,13 +21,54 @@ except ValueError:
 
 # RSS feeds from diverse global sources
 RSS_FEEDS = [
-    "https://feeds.bbci.co.uk/news/world/rss.xml",         # BBC (UK)
-    "https://rss.cnn.com/rss/edition_world.rss",            # CNN (USA)
-    "https://www.aljazeera.com/xml/rss/all.xml",            # Al Jazeera (Qatar)
-    "https://feeds.reuters.com/reuters/worldNews",           # Reuters (International)
-    "https://rss.dw.com/rdf/rss-en-world",                  # DW (Germany)
-    "https://www.france24.com/en/rss",                       # France24 (France)
-    "https://feeds.skynews.com/feeds/rss/world.xml",        # Sky News (UK)
+    # 🇬🇧 UK
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.skynews.com/feeds/rss/world.xml",
+    "https://www.theguardian.com/world/rss",
+
+    # 🇺🇸 USA
+    "https://rss.cnn.com/rss/edition_world.rss",
+    "https://feeds.npr.org/1004/rss.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+
+    # 🌍 International
+    "https://feeds.reuters.com/reuters/worldNews",
+    "https://www.aljazeera.com/xml/rss/all.xml",
+
+    # 🇩🇪 Germany
+    "https://rss.dw.com/rdf/rss-en-world",
+
+    # 🇫🇷 France
+    "https://www.france24.com/en/rss",
+
+    # 🇯🇵 Japan
+    "https://www3.nhk.or.jp/rss/news/cat6.xml",
+
+    # 🇮🇳 India
+    "https://feeds.feedburner.com/ndtvnews-world-news",
+
+    # 🇦🇺 Australia
+    "https://www.abc.net.au/news/feed/51120/rss.xml",
+
+    # 🇨🇦 Canada
+    "https://www.cbc.ca/cmlink/rss-world",
+
+    # 🇰🇷 South Korea
+    "https://koreajoongangdaily.joins.com/rss/feeds/worldnews.xml",
+
+    # 🇨🇳 China
+    "http://www.xinhuanet.com/english/rss/worldrss.xml",
+    "https://www.cgtn.com/subscribe/rss/section/world.xml",
+    "http://en.people.cn/rss/world.xml",
+
+    # 🇷🇺 Russia (international perspective)
+    "https://www.rt.com/rss/news/",
+
+    # 🇧🇷 Brazil
+    "https://www.bbc.com/portuguese/rss.xml",
+
+    # 🇿🇦 Africa
+    "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf",
 ]
 
 # AI neutrality rules
