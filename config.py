@@ -21,20 +21,79 @@ TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 # Groq
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Интервал публикации (по умолчанию 30 минут)
+# Интервал публикации
 POST_INTERVAL_MINUTES = int(os.getenv("POST_INTERVAL_MINUTES", "30"))
 
-# RSS источники (топовые мировые СМИ)
+# 🌍 ПОЛНЫЙ СПИСОК ИСТОЧНИКОВ - 27 СМИ СО ВСЕГО МИРА
 RSS_FEEDS = [
+    # 🇬🇧 Великобритания (3)
     "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.skynews.com/feeds/rss/world.xml",
+    "https://www.theguardian.com/world/rss",
+
+    # 🇺🇸 США (4)
     "https://rss.cnn.com/rss/edition_world.rss",
+    "https://feeds.npr.org/1004/rss.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "https://feeds.feedburner.com/time/world",
+
+    # 🌍 Международные агентства (3)
     "https://feeds.reuters.com/reuters/worldNews",
     "https://www.aljazeera.com/xml/rss/all.xml",
+    "https://apnews.com/apf-worldnews",
+
+    # 🇩🇪 Германия (1)
     "https://rss.dw.com/rdf/rss-en-world",
+
+    # 🇫🇷 Франция (1)
     "https://www.france24.com/en/rss",
-    "https://feeds.skynews.com/feeds/rss/world.xml",
-    "https://feeds.npr.org/1004/rss.xml",
+
+    # 🇯🇵 Япония (1)
+    "https://www3.nhk.or.jp/rss/news/cat6.xml",
+
+    # 🇮🇳 Индия (1)
+    "https://feeds.feedburner.com/ndtvnews-world-news",
+
+    # 🇦🇺 Австралия (1)
+    "https://www.abc.net.au/news/feed/51120/rss.xml",
+
+    # 🇨🇦 Канада (1)
+    "https://www.cbc.ca/cmlink/rss-world",
+
+    # 🇰🇷 Южная Корея (1)
+    "https://koreajoongangdaily.joins.com/rss/feeds/worldnews.xml",
+
+    # 🇨🇳 Китай (3)
+    "http://www.xinhuanet.com/english/rss/worldrss.xml",
+    "https://www.cgtn.com/subscribe/rss/section/world.xml",
+    "http://en.people.cn/rss/world.xml",
+
+    # 🇷🇺 Россия (2)
+    "https://www.rt.com/rss/news/",
+    "https://tass.com/rss/v2.xml",
+
+    # 🇧🇷 Бразилия (1)
+    "https://www.bbc.com/portuguese/rss.xml",
+
+    # 🇿🇦 Африка (1)
+    "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf",
+
+    # 🇹🇷 Турция (1)
+    "https://www.dailysabah.com/rss/feed",
+
+    # 🇮🇱 Израиль (1)
+    "https://www.haaretz.com/cmlink/1.1596990",
+
+    # 🇮🇷 Иран (1)
+    "https://www.presstv.ir/feeds/english",
+
+    # 🇪🇬 Египет (1)
+    "https://english.ahram.org.eg/News/rss/0.aspx",
 ]
 
-# Правила для ИИ (коротко и ясно)
-NEUTRALITY_RULES = "Ты независимый журналист. Пиши факты холодно и без эмоций."
+# Правила для ИИ (коротко)
+NEUTRALITY_RULES = "Ты независимый ИИ-журналист. Пиши факты холодно, без эмоций. Ты видишь все стороны."
+
+print(f"✅ Конфигурация загружена")
+print(f"📡 Источников: {len(RSS_FEEDS)}")
+print(f"⏰ Интервал: {POST_INTERVAL_MINUTES} минут")
