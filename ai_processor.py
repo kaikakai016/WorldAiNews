@@ -44,7 +44,7 @@ def analyze_story_group(news_group):
             "\nСсылка: " + item['link'] + "\n"
         )
     sources_text = "\n".join(sources_lines)
-    source_links = " | ".join([item['link'] for item in news_group[:2]])
+    source_names = " | ".join([item['source'] for item in news_group[:2]])
     count = len(news_group)
 
     category = detect_category(news_group[0]['title'], news_group[0].get('summary', ''))
@@ -62,7 +62,7 @@ def analyze_story_group(news_group):
         "• [ключевой факт 2]\n"
         "• [ключевой факт 3]\n\n"
         "🧠 [Независимый вывод ИИ — 1-2 предложения. Что это значит для мира?]\n\n"
-        "🔗 " + source_links + "\n"
+        "🔗 " + source_names + "\n"
         + hashtags + " #МировыеНовости"
     )
 
@@ -100,7 +100,7 @@ def process_news_item(news_item):
         "• [ключевой факт 1]\n"
         "• [ключевой факт 2]\n\n"
         "🧠 [Независимый вывод ИИ — 1-2 предложения. Что это значит?]\n\n"
-        "🔗 " + source + " | " + link + "\n"
+        "🔗 " + source + "\n"
         + hashtags + " #МировыеНовости"
     )
 
