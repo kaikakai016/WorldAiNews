@@ -61,7 +61,7 @@ RSS_FEEDS = [
     "https://www.cgtn.com/subscribe/rss/section/world.xml",
     "http://en.people.cn/rss/world.xml",
 
-    # 🇷🇺 Russia (international perspective)
+    # 🇷🇺 Russia
     "https://www.rt.com/rss/news/",
 
     # 🇧🇷 Brazil
