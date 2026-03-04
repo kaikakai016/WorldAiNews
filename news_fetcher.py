@@ -1,97 +1,78 @@
-import feedparser, requests, socket
+import feedparser
+import socket
 from concurrent.futures import ThreadPoolExecutor
-from config import RSS_FEEDS, NEWS_API_KEY
-from difflib import SequenceMatcher
-
-def get_image_from_entry(entry):
-    if hasattr(entry, 'media_content') and entry.media_content:
-        for m in entry.media_content:
-            if m.get('type', '').startswith('image') or m.get('url', '').endswith(('.jpg', '.jpeg', '.png', '.webp')):
-                return m.get('url')
-    if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
-        return entry.media_thumbnail[0].get('url')
-    if hasattr(entry, 'enclosures') and entry.enclosures:
-        for enc in entry.enclosures:
-            if enc.get('type', '').startswith('image'):
-                return enc.get('href') or enc.get('url')
-    if hasattr(entry, 'links'):
-        for link in entry.links:
-            if link.get('type', '').startswith('image'):
-                return link.get('href')
-    return None
+from config import RSS_FEEDS
 
 def fetch_single_feed(feed_url):
+    """Загружает одну RSS ленту"""
     try:
         socket.setdefaulttimeout(5)
         feed = feedparser.parse(feed_url)
+        
         source_name = feed.feed.get('title', feed_url)
         results = []
-        for entry in feed.entries[:3]:
-            image = get_image_from_entry(entry)
-            results.append({'title': entry.get('title', ''), 'summary': entry.get('summary', entry.get('description', '')), 'link': entry.get('link', ''), 'source': source_name, 'published': entry.get('published', ''), 'image': image})
+        
+        for entry in feed.entries[:5]:  # берем 5 свежих новостей
+            if not entry.get('title'):
+                continue
+                
+            results.append({
+                'title': entry.get('title', ''),
+                'summary': entry.get('summary', entry.get('description', ''))[:300],
+                'source': source_name,
+            })
         return results
     except Exception as e:
-        print("Feed error: " + str(e))
         return []
 
-def fetch_rss_news():
+def fetch_all_news():
+    """Собирает все новости параллельно"""
     all_news = []
+    
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(fetch_single_feed, url): url for url in RSS_FEEDS}
+        futures = [executor.submit(fetch_single_feed, url) for url in RSS_FEEDS]
+        
         for future in futures:
             try:
                 result = future.result(timeout=8)
                 all_news.extend(result)
-            except Exception as e:
-                print("Timeout: " + str(e))
-    print("RSS fetched: " + str(len(all_news)) + " items")
+            except:
+                continue
+    
+    print(f"📰 Собрано {len(all_news)} новостей")
     return all_news
 
-def fetch_newsapi_headlines():
-    if not NEWS_API_KEY:
-        return []
-    try:
-        url = "https://newsapi.org/v2/top-headlines?language=en&pageSize=10&apiKey=" + NEWS_API_KEY
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        articles = []
-        for article in data.get('articles', []):
-            articles.append({'title': article.get('title', ''), 'summary': article.get('description', ''), 'link': article.get('url', ''), 'source': article.get('source', {}).get('name', 'NewsAPI'), 'published': article.get('publishedAt', ''), 'image': article.get('urlToImage')})
-        return articles
-    except Exception as e:
-        print("NewsAPI error: " + str(e))
-        return []
-
-def similar(a, b):
-    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
-
-def extract_keywords(title):
-    sw = {'the','a','an','in','on','at','to','for','of','and','or','but','is','are','was','were','be','been','has','have','had','will','would','could','should','may','might','as','by','from','with','about','into','after','before','during','says','said','say'}
-    return set(title.lower().split()) - sw
-
-def group_similar_news(all_news, similarity_threshold=0.3, min_sources=2):
+def group_similar_news(news_list, min_sources=2):
+    """
+    Группирует похожие новости (простым алгоритмом)
+    """
     groups = []
-    used_indices = set()
-    for i, item in enumerate(all_news):
-        if i in used_indices:
+    used = set()
+    
+    for i, item1 in enumerate(news_list):
+        if i in used:
             continue
-        group = [item]
-        keywords_i = extract_keywords(item['title'])
-        for j, other_item in enumerate(all_news):
-            if j <= i or j in used_indices:
+            
+        group = [item1]
+        
+        for j, item2 in enumerate(news_list):
+            if j <= i or j in used:
                 continue
-            if item['source'] == other_item['source']:
-                continue
-            keywords_j = extract_keywords(other_item['title'])
-            overlap = len(keywords_i & keywords_j) / min(len(keywords_i), len(keywords_j)) if keywords_i and keywords_j else 0
-            if overlap >= similarity_threshold or similar(item['title'], other_item['title']) >= 0.4:
-                group.append(other_item)
-                used_indices.add(j)
+                
+            # Проверяем похожесть по ключевым словам
+            words1 = set(item1['title'].lower().split())
+            words2 = set(item2['title'].lower().split())
+            
+            common = words1 & words2
+            if len(common) >= 3:  # минимум 3 общих слова
+                group.append(item2)
+                used.add(j)
+        
         if len(group) >= min_sources:
             groups.append(group)
-            used_indices.add(i)
-    groups.sort(key=lambda g: len(g), reverse=True)
+            used.add(i)
+    
+    # Сортируем группы по размеру
+    groups.sort(key=len, reverse=True)
+    print(f"🔍 Найдено {len(groups)} групп новостей")
     return groups
-
-def get_all_news():
-    return fetch_rss_news() + fetch_newsapi_headlines()
