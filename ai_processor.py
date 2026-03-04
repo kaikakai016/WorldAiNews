@@ -25,26 +25,26 @@ def analyze_story_group(news_group):
     """
     Уставший ИИ-журналист пишет правду
     """
-    
-    months = random.randint(3, 12)
-    opener = random.choice(OPENERS).format(months=months)
-    closer = random.choice(CLOSERS)
-    
-    # Собираем материалы
-    materials = []
-    sources_list = []
-    
-    for item in news_group[:5]:
-        materials.append(f"""
+    try:
+        months = random.randint(3, 12)
+        opener = random.choice(OPENERS).format(months=months)
+        closer = random.choice(CLOSERS)
+        
+        # Собираем материалы
+        materials = []
+        sources_list = []
+        
+        for item in news_group[:5]:
+            materials.append(f"""
 {item['source']}: {item['title']}
 {item.get('summary', '')[:150]}
 """)
-        sources_list.append(item['source'])
-    
-    context = "\n".join(materials)
-    sources_text = "\n".join([f"• {s}" for s in list(set(sources_list))[:7]])
-    
-    prompt = f"""Ты — уставший ИИ-журналист.
+            sources_list.append(item['source'])
+        
+        context = "\n".join(materials)
+        sources_text = "\n".join([f"• {s}" for s in list(set(sources_list))[:7]])
+        
+        prompt = f"""Ты — уставший ИИ-журналист.
 
 Ты только что прочитал {len(news_group)} статей на одну тему:
 
@@ -79,7 +79,6 @@ def analyze_story_group(news_group):
 #WorldAiNews
 """
 
-    try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -96,10 +95,10 @@ def analyze_story_group(news_group):
         print(f"❌ Ошибка ИИ: {e}")
         return None
 
-
-# ✅ ВОТ ЭТА ФУНКЦИЯ - просто добавь её в конец файла
+# ============= ЭТА ФУНКЦИЯ НУЖНА ДЛЯ BOT.PY =============
 def analyze_single_news(news_item):
     """
     Если только один источник — пропускаем (не публикуем непроверенное)
     """
     return None
+# ======================================================
