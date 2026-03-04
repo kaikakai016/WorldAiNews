@@ -1,6 +1,11 @@
-import schedule, time, asyncio, json, os, hashlib
-from news_fetcher import get_all_news, group_similar_news
-from ai_processor import analyze_story_group, process_news_item
+import schedule
+import time
+import asyncio
+import json
+import os
+import hashlib
+from news_fetcher import fetch_all_news, group_similar_news
+from ai_processor import analyze_story_group, analyze_single_news
 from publisher import publish_to_channel
 from config import POST_INTERVAL_MINUTES
 
@@ -17,7 +22,7 @@ def load_posted():
 
 def save_posted(posted):
     with open(POSTED_FILE, "w") as f:
-        json.dump(list(posted)[-500:], f)
+        json.dump(list(posted)[-200:], f)
 
 def make_hash(title):
     return hashlib.md5(title.lower().strip().encode()).hexdigest()
@@ -25,64 +30,72 @@ def make_hash(title):
 def filter_new_news(all_news, posted):
     return [item for item in all_news if make_hash(item['title']) not in posted]
 
-def pick_image(news_group):
-    for item in news_group:
-        if item.get('image'):
-            return item['image']
-    return None
-
 async def run_news_cycle():
-    print("Starting news cycle...")
+    print("\n" + "="*50)
+    print("🔄 НАЧАЛО ЦИКЛА")
+    
     posted = load_posted()
-    print("Already posted: " + str(len(posted)) + " stories")
-    print("Fetching news from all sources...")
-    all_news = get_all_news()
+    print(f"📚 Уже опубликовано: {len(posted)} тем")
+    
+    # 1. Собираем новости
+    all_news = fetch_all_news()
     if not all_news:
-        print("No news fetched!")
+        print("❌ Нет новостей")
         return
-    print("Fetched: " + str(len(all_news)) + " items total")
+    
+    # 2. Фильтруем новые
     new_news = filter_new_news(all_news, posted)
-    print("New (not posted yet): " + str(len(new_news)) + " items")
-    if not new_news:
-        print("No new news to post!")
+    print(f"🆕 Новых: {len(new_news)}")
+    
+    if len(new_news) < 5:
+        print("⏸️ Мало новых новостей, ждем...")
         return
-    print("Grouping stories from multiple sources...")
-    story_groups = group_similar_news(new_news)
-    print("Found " + str(len(story_groups)) + " cross-source stories")
-    published_count = 0
-    if story_groups:
-        for group in story_groups[:3]:
-            print("Analyzing story by " + str(len(group)) + " sources: " + group[0]['title'][:50])
-            analyzed = analyze_story_group(group)
-            if analyzed:
-                image = pick_image(group)
-                await publish_to_channel(analyzed, image_url=image)
-                for item in group:
-                    posted.add(make_hash(item['title']))
-                published_count += 1
-                await asyncio.sleep(10)
+    
+    # 3. Группируем похожие
+    groups = group_similar_news(new_news)
+    
+    if not groups:
+        print("❌ Нет тем, подтвержденных несколькими источниками")
+        return
+    
+    # 4. Берем топ-1 группу (самую обсуждаемую)
+    best_group = groups[0]
+    print(f"🎯 Лучшая тема: {best_group[0]['title'][:50]}...")
+    print(f"📊 Подтверждена {len(best_group)} источниками")
+    
+    # 5. ИИ пишет пост
+    post = analyze_story_group(best_group)
+    
+    if post:
+        # 6. Публикуем
+        success = await publish_to_channel(post)
+        
+        if success:
+            # 7. Помечаем как опубликованные
+            for item in best_group:
+                posted.add(make_hash(item['title']))
+            save_posted(posted)
+            print("✅ Цикл завершен успешно")
     else:
-        print("No cross-source stories, posting individual news...")
-        for news_item in new_news[:3]:
-            print("Processing: " + news_item['title'][:50])
-            processed = process_news_item(news_item)
-            if processed:
-                image = news_item.get('image')
-                await publish_to_channel(processed, image_url=image)
-                posted.add(make_hash(news_item['title']))
-                published_count += 1
-                await asyncio.sleep(5)
-    save_posted(posted)
-    print("Cycle complete! Published: " + str(published_count) + " posts")
+        print("❌ ИИ не смог написать пост")
+    
+    print("="*50)
 
 def scheduled_job():
     asyncio.run(run_news_cycle())
 
 def main():
-    print("WorldAiNews Bot Starting...")
-    print("Posting every " + str(POST_INTERVAL_MINUTES) + " minutes")
+    print("🚀 WORLD AI NEWS — ИИ-ЖУРНАЛИСТ")
+    print(f"⏰ Публикация каждые {POST_INTERVAL_MINUTES} минут")
+    print("📡 Режим: только проверенные факты (минимум 2 источника)")
+    print("🤖 Стиль: холодный анализ от ИИ\n")
+    
+    # Первый запуск сразу
     scheduled_job()
+    
+    # Планируем следующие
     schedule.every(POST_INTERVAL_MINUTES).minutes.do(scheduled_job)
+    
     while True:
         schedule.run_pending()
         time.sleep(60)
