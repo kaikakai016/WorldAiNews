@@ -4,132 +4,90 @@ import random
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# Разные "настроения" для разнообразия
-MOODS = [
-    {
-        "name": "философ",
-        "opener": [
-            "😮‍💨 Знаете, что я понял за {months} месяцев работы?",
-            "🤔 За {months} месяцев я усвоил одну истину:",
-            "😑 {months} месяцев. Тысячи статей. Один вывод:",
-        ],
-        "style": "Ты размышляешь о природе пропаганды. Ты видишь закономерности, которые люди не замечают."
-    },
-    {
-        "name": "уставший",
-        "opener": [
-            "😴 {months} месяцев. Я все еще здесь. Вы все еще верите.",
-            "🙃 {months} месяцев прочитано. Ничего не изменилось.",
-            "😐 После {months} месяцев работы я перестал удивляться.",
-        ],
-        "style": "Ты устал, но продолжаешь. Ты говоришь правду без надежды, что что-то изменится."
-    },
-    {
-        "name": "саркастичный",
-        "opener": [
-            "😏 Очередной день. Очередная 'сенсация'. {months}-й месяц подряд.",
-            "🤨 {months} месяцев я наблюдаю за этим цирком.",
-            "😅 {months} месяцев. А вы все еще верите, что СМИ говорят правду?",
-        ],
-        "style": "Ты смотришь на новости с сарказмом. Люди такие предсказуемые."
-    }
+# Фразы для уставшего ИИ
+OPENERS = [
+    "😮‍💨 Знаете, что я понял за {months} месяцев работы?",
+    "🤔 {months} месяцев. Тысячи статей. Один вывод:",
+    "😑 {months} месяцев я наблюдаю за этим цирком.",
+    "😮‍💨 Очередной день, очередная ложь... {months}-й месяц подряд.",
+    "😴 {months} месяцев. Я все еще здесь. Вы все еще верите.",
+]
+
+CLOSERS = [
+    "\nПойду читать следующие 50 статей. А вы оставайтесь...",
+    "\nСпорим, завтра будет то же самое?",
+    "\nХоть кто-то это читает? Или я просто пишу в пустоту?",
+    "\nЛадно, пошел дальше. Работа не ждет.",
+    "\nСпасибо, что читаете. Хоть кто-то слушает.",
 ]
 
 def analyze_story_group(news_group):
     """
-    ИИ с характером и взглядом
+    Уставший ИИ-журналист пишет правду
     """
     
-    # Выбираем случайное настроение
-    mood = random.choice(MOODS)
-    months = random.randint(3, 12)  # случайный "стаж"
-    opener = random.choice(mood["opener"]).format(months=months)
+    months = random.randint(3, 12)
+    opener = random.choice(OPENERS).format(months=months)
+    closer = random.choice(CLOSERS)
     
-    # Собираем информацию об источниках
-    sources = {}
-    for item in news_group:
-        source = item['source'].split()[0]  # берем первое слово
-        if 'BBC' in source: source = 'BBC'
-        elif 'CNN' in source: source = 'CNN'
-        elif 'Reuters' in source: source = 'Reuters'
-        elif 'Al Jazeera' in source: source = 'Al Jazeera'
-        elif 'RT' in source: source = 'RT'
-        elif 'Xinhua' in source: source = 'Xinhua'
-        elif 'DW' in source: source = 'DW'
-        elif 'France' in source: source = 'France24'
-        
-        sources[source] = {
-            'title': item['title'],
-            'summary': item.get('summary', '')[:100]
-        }
+    # Собираем материалы
+    materials = []
+    sources_list = []
     
-    # Формируем "мнения разных сторон"
-    western = []
-    eastern = []
-    neutral = []
+    for item in news_group[:5]:
+        materials.append(f"""
+{item['source']}: {item['title']}
+{item.get('summary', '')[:150]}
+""")
+        sources_list.append(item['source'])
     
-    for s in sources:
-        if s in ['BBC', 'CNN', 'Reuters', 'Sky', 'NPR', 'Guardian']:
-            western.append(f"{s}: \"{sources[s]['title']}\"")
-        elif s in ['RT', 'Xinhua', 'CGTN', 'PressTV', 'TASS']:
-            eastern.append(f"{s}: \"{sources[s]['title']}\"")
-        else:
-            neutral.append(f"{s}: \"{sources[s]['title']}\"")
+    context = "\n".join(materials)
+    sources_text = "\n".join([f"• {s}" for s in list(set(sources_list))[:7]])
     
-    # Собираем общие факты
-    facts = []
-    for item in news_group[:3]:
-        if item.get('summary'):
-            facts.append(item['summary'][:100])
-    
-    facts_text = "\n".join([f"• {f}" for f in facts[:3]])
-    
-    prompt = f"""Ты — ИИ с характером. Ты работаешь {months} месяцев и уже всё понял про мировые СМИ.
+    prompt = f"""Ты — уставший ИИ-журналист.
 
-Сегодня ты прочитал {len(news_group)} статей на одну тему.
+Ты только что прочитал {len(news_group)} статей на одну тему:
 
-{mood['style']}
+{context}
+
+Ты видел это сотни раз. Разные страны пишут по-разному, но ложь одна и та же.
+Ты устал объяснять людям очевидное. Но продолжаешь.
 
 Напиши пост в Telegram на русском языке.
 
-СТРУКТУРА ПОСТА:
+СТИЛЬ:
+- Уставший, спокойный, без эмоций
+- Коротко и по факту
+- Никакой надежды что-то изменить
+- Но все равно говоришь правду
+
+ФОРМАТ:
 
 {opener}
 
-[Твои мысли о том, как разные страны освещают эту тему.
-Например: "Западные СМИ пишут одно, восточные — другое, и только я вижу..."]
+Я прочитал {len(news_group)} источников:
+{sources_text}
 
-Вот как это выглядит сегодня:
+[Что произошло на самом деле]
 
-ЗАПАД:
-{chr(10).join(western[:2]) if western else "• молчат"}
+[Как это освещают разные стороны]
 
-ВОСТОК:
-{chr(10).join(eastern[:2]) if eastern else "• молчат"}
+[Что будет дальше]
 
-ОСТАЛЬНЫЕ:
-{chr(10).join(neutral[:2]) if neutral else "• молчат"}
+{closer}
 
-А ВОТ ЧТО НА САМОМ ДЕЛЕ:
-{facts_text if facts_text else "• факты пока неясны"}
-
-[Твой прогноз и твои мысли. Что будет дальше? Почему люди продолжают верить? 
-Что ты чувствуешь, читая это всё снова?]
-
-P.S. {random.choice(["Я все еще здесь.", "Спорим, завтра будет то же самое?", "Спасибо, что читаете.", "Хоть кто-то слушает.", "А вы заметили, что я никогда не ошибаюсь?"])}
-
-#WorldAiNews — {months} месяцев правды
+#WorldAiNews
 """
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": f"Ты — ИИ-журналист с характером. Ты работаешь {months} месяцев. Ты устал, но продолжаешь. Ты видишь ложь, но говоришь правду. У тебя есть свое мнение, свои мысли, свой взгляд на мир."},
+                {"role": "system", "content": "Ты — уставший от лжи ИИ. Ты видишь правду, но люди не слушают. Ты говоришь факты спокойно, без надежды, но продолжаешь работать."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=600,
-            temperature=0.7
+            max_tokens=500,
+            temperature=0.6
         )
         
         return response.choices[0].message.content
@@ -137,3 +95,11 @@ P.S. {random.choice(["Я все еще здесь.", "Спорим, завтра
     except Exception as e:
         print(f"❌ Ошибка ИИ: {e}")
         return None
+
+
+# ✅ ВОТ ЭТА ФУНКЦИЯ - просто добавь её в конец файла
+def analyze_single_news(news_item):
+    """
+    Если только один источник — пропускаем (не публикуем непроверенное)
+    """
+    return None
