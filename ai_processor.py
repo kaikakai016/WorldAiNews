@@ -44,7 +44,6 @@ def analyze_story_group(news_group):
             "\nСсылка: " + item['link'] + "\n"
         )
     sources_text = "\n".join(sources_lines)
-    source_names = ", ".join([item['source'] for item in news_group])
     source_links = " | ".join([item['link'] for item in news_group[:2]])
     count = len(news_group)
 
@@ -52,16 +51,17 @@ def analyze_story_group(news_group):
     hashtags = get_hashtags(category)
 
     prompt = (
-        "Ты анализируешь одну новость от " + str(count) + " СМИ.\n\n"
+        "Ты — независимый ИИ-аналитик. Тебе дана одна новость от " + str(count) + " разных СМИ.\n\n"
         + sources_text + "\n\n"
-        "Создай ОЧЕНЬ КОРОТКИЙ пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
-        "ВАЖНО: весь пост должен быть НЕ БОЛЕЕ 900 символов!\n\n"
-        "Формат:\n"
+        "Создай короткий пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
+        "ВАЖНО: весь пост НЕ БОЛЕЕ 900 символов!\n\n"
+        "Формат (строго):\n"
         "🏷 " + category + "\n"
         "🌍 [тема — 1 строка]\n\n"
-        "• [факт 1]\n"
-        "• [факт 2]\n"
-        "• [факт 3]\n\n"
+        "• [ключевой факт 1]\n"
+        "• [ключевой факт 2]\n"
+        "• [ключевой факт 3]\n\n"
+        "🧠 [Независимый вывод ИИ — 1-2 предложения. Что это значит для мира?]\n\n"
         "🔗 " + source_links + "\n"
         + hashtags + " #МировыеНовости"
     )
@@ -70,8 +70,8 @@ def analyze_story_group(news_group):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": NEUTRALITY_RULES}, {"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.3
+            max_tokens=320,
+            temperature=0.4
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -88,16 +88,18 @@ def process_news_item(news_item):
     hashtags = get_hashtags(category)
 
     prompt = (
+        "Ты — независимый ИИ-аналитик.\n"
         "Заголовок: " + title + "\n"
         "Источник: " + source + "\n"
         "Содержание: " + summary[:200] + "\n\n"
-        "Создай ОЧЕНЬ КОРОТКИЙ пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
-        "ВАЖНО: весь пост должен быть НЕ БОЛЕЕ 900 символов!\n\n"
-        "Формат:\n"
+        "Создай короткий пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
+        "ВАЖНО: весь пост НЕ БОЛЕЕ 900 символов!\n\n"
+        "Формат (строго):\n"
         "🏷 " + category + "\n"
         "📌 [заголовок — 1 строка]\n\n"
-        "• [факт 1]\n"
-        "• [факт 2]\n\n"
+        "• [ключевой факт 1]\n"
+        "• [ключевой факт 2]\n\n"
+        "🧠 [Независимый вывод ИИ — 1-2 предложения. Что это значит?]\n\n"
         "🔗 " + source + " | " + link + "\n"
         + hashtags + " #МировыеНовости"
     )
@@ -106,8 +108,8 @@ def process_news_item(news_item):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": NEUTRALITY_RULES}, {"role": "user", "content": prompt}],
-            max_tokens=250,
-            temperature=0.3
+            max_tokens=280,
+            temperature=0.4
         )
         return response.choices[0].message.content
     except Exception as e:
