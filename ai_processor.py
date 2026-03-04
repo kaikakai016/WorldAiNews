@@ -40,29 +40,29 @@ def analyze_story_group(news_group):
         sources_lines.append(
             "Источник: " + item['source'] +
             "\nЗаголовок: " + item['title'] +
-            "\nОписание: " + (item['summary'][:200] if item['summary'] else '') +
+            "\nОписание: " + (item['summary'][:150] if item['summary'] else '') +
             "\nСсылка: " + item['link'] + "\n"
         )
     sources_text = "\n".join(sources_lines)
     source_names = ", ".join([item['source'] for item in news_group])
-    source_links = " | ".join([item['link'] for item in news_group[:3]])
+    source_links = " | ".join([item['link'] for item in news_group[:2]])
     count = len(news_group)
 
     category = detect_category(news_group[0]['title'], news_group[0].get('summary', ''))
     hashtags = get_hashtags(category)
 
     prompt = (
-        "Ты анализируешь ОДНУ И ТУ ЖЕ новость, поданную " + str(count) + " разными СМИ.\n\n"
-        "Вот репортажи:\n\n" + sources_text + "\n\n"
-        "Создай независимый нейтральный пост для Telegram НА РУССКОМ ЯЗЫКЕ в формате:\n\n"
-        "🏷 Категория: " + category + "\n"
-        "🌍 ТЕМА: [тема на русском]\n"
-        "📊 Покрыто источниками: " + str(count) + " (" + source_names + ")\n\n"
-        "[Для каждого источника: 📰 НазваниеИсточника: суть подачи в одном предложении]\n\n"
-        "✅ ПОДТВЕРЖДЕНО ВСЕМИ:\n• [Факт 1]\n• [Факт 2]\n\n"
-        "🔍 РАЗЛИЧИЯ В ПОДАЧЕ:\n• [Отличия]\n\n"
-        "🧠 НЕЗАВИСИМЫЙ ВЫВОД:\n[2-3 предложения]\n\n"
-        "🔗 Источники: " + source_links + "\n\n"
+        "Ты анализируешь одну новость от " + str(count) + " СМИ.\n\n"
+        + sources_text + "\n\n"
+        "Создай ОЧЕНЬ КОРОТКИЙ пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
+        "ВАЖНО: весь пост должен быть НЕ БОЛЕЕ 900 символов!\n\n"
+        "Формат:\n"
+        "🏷 " + category + "\n"
+        "🌍 [тема — 1 строка]\n\n"
+        "• [факт 1]\n"
+        "• [факт 2]\n"
+        "• [факт 3]\n\n"
+        "🔗 " + source_links + "\n"
         + hashtags + " #МировыеНовости"
     )
 
@@ -70,7 +70,7 @@ def analyze_story_group(news_group):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": NEUTRALITY_RULES}, {"role": "user", "content": prompt}],
-            max_tokens=700,
+            max_tokens=300,
             temperature=0.3
         )
         return response.choices[0].message.content
@@ -90,13 +90,15 @@ def process_news_item(news_item):
     prompt = (
         "Заголовок: " + title + "\n"
         "Источник: " + source + "\n"
-        "Содержание: " + summary + "\n"
-        "Ссылка: " + link + "\n\n"
-        "Создай нейтральный пост для Telegram НА РУССКОМ ЯЗЫКЕ в формате:\n\n"
-        "🏷 Категория: " + category + "\n"
-        "📌 [Нейтральный заголовок на русском]\n\n"
-        "📋 ФАКТЫ:\n• [Факт 1]\n• [Факт 2]\n• [Факт 3]\n\n"
-        "🔗 Источник: " + source + " | " + link + "\n\n"
+        "Содержание: " + summary[:200] + "\n\n"
+        "Создай ОЧЕНЬ КОРОТКИЙ пост для Telegram НА РУССКОМ ЯЗЫКЕ.\n"
+        "ВАЖНО: весь пост должен быть НЕ БОЛЕЕ 900 символов!\n\n"
+        "Формат:\n"
+        "🏷 " + category + "\n"
+        "📌 [заголовок — 1 строка]\n\n"
+        "• [факт 1]\n"
+        "• [факт 2]\n\n"
+        "🔗 " + source + " | " + link + "\n"
         + hashtags + " #МировыеНовости"
     )
 
@@ -104,7 +106,7 @@ def process_news_item(news_item):
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": NEUTRALITY_RULES}, {"role": "user", "content": prompt}],
-            max_tokens=400,
+            max_tokens=250,
             temperature=0.3
         )
         return response.choices[0].message.content
