@@ -29,13 +29,13 @@ Format your response EXACTLY like this:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": NEUTRALITY_RULES},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=400,
-            temperature=0.3  # Low temperature = more consistent, less creative
+            temperature=0.3
         )
         
         return response.choices[0].message.content
@@ -68,7 +68,7 @@ Sources: [source1, source2, source3]
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a neutral news analyst. Be concise and factual."},
                 {"role": "user", "content": prompt}
