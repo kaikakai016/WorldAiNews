@@ -1,66 +1,80 @@
-import schedule
-import time
-import asyncio
+import schedule, time, asyncio, json, os, hashlib
 from news_fetcher import get_all_news, group_similar_news
 from ai_processor import analyze_story_group, process_news_item
 from publisher import publish_to_channel
 from config import POST_INTERVAL_MINUTES
 
+POSTED_FILE = "posted_news.json"
+
+def load_posted():
+    if os.path.exists(POSTED_FILE):
+        try:
+            with open(POSTED_FILE, "r") as f:
+                return set(json.load(f))
+        except:
+            return set()
+    return set()
+
+def save_posted(posted):
+    with open(POSTED_FILE, "w") as f:
+        json.dump(list(posted)[-500:], f)
+
+def make_hash(title):
+    return hashlib.md5(title.lower().strip().encode()).hexdigest()
+
+def filter_new_news(all_news, posted):
+    return [item for item in all_news if make_hash(item['title']) not in posted]
+
 async def run_news_cycle():
-    """Main news cycle: fetch → group → analyze → publish"""
-    print("🔄 Starting news cycle...")
-    
-    # Step 1: Fetch news from all sources
-    print("📰 Fetching news from all sources...")
+    print("Starting news cycle...")
+    posted = load_posted()
+    print("Already posted: " + str(len(posted)) + " stories")
+    print("Fetching news from all sources...")
     all_news = get_all_news()
-    
     if not all_news:
-        print("❌ No news fetched!")
+        print("No news fetched!")
         return
-    
-    print(f"✅ Fetched {len(all_news)} news items from {len(set(item['source'] for item in all_news))} sources")
-    
-    # Step 2: Group similar stories from different sources
-    print("🔍 Grouping stories from multiple sources...")
-    story_groups = group_similar_news(all_news)
-    print(f"📦 Found {len(story_groups)} cross-source stories")
-    
+    print("Fetched: " + str(len(all_news)) + " items total")
+    new_news = filter_new_news(all_news, posted)
+    print("New (not posted yet): " + str(len(new_news)) + " items")
+    if not new_news:
+        print("No new news to post!")
+        return
+    print("Grouping stories from multiple sources...")
+    story_groups = group_similar_news(new_news)
+    print("Found " + str(len(story_groups)) + " cross-source stories")
+    published_count = 0
     if story_groups:
-        # Post top 3 most covered stories
         for group in story_groups[:3]:
-            print(f"🧠 Analyzing story covered by {len(group)} sources: {group[0]['title'][:50]}...")
+            print("Analyzing story by " + str(len(group)) + " sources: " + group[0]['title'][:50])
             analyzed = analyze_story_group(group)
-            
             if analyzed:
                 await publish_to_channel(analyzed)
-                await asyncio.sleep(10)  # Delay between posts
+                for item in group:
+                    posted.add(make_hash(item['title']))
+                published_count += 1
+                await asyncio.sleep(10)
     else:
-        # Fallback: post individual news if no groups found
-        print("⚠️ No cross-source stories found, posting individual news...")
-        for news_item in all_news[:3]:
-            print(f"🧠 Processing: {news_item['title'][:50]}...")
+        print("No cross-source stories, posting individual news...")
+        for news_item in new_news[:3]:
+            print("Processing: " + news_item['title'][:50])
             processed = process_news_item(news_item)
             if processed:
                 await publish_to_channel(processed)
+                posted.add(make_hash(news_item['title']))
+                published_count += 1
                 await asyncio.sleep(5)
-    
-    print("✅ News cycle complete!")
+    save_posted(posted)
+    print("Cycle complete! Published: " + str(published_count) + " posts")
 
 def scheduled_job():
-    """Run the async news cycle"""
     asyncio.run(run_news_cycle())
 
-
 def main():
-    print("🚀 WorldAiNews Bot Starting...")
-    print(f"⏰ Posting every {POST_INTERVAL_MINUTES} minutes")
-    
-    # Run immediately on start
+    print("WorldAiNews Bot Starting...")
+    print("Posting every " + str(POST_INTERVAL_MINUTES) + " minutes")
     scheduled_job()
-    
-    # Schedule regular runs
     schedule.every(POST_INTERVAL_MINUTES).minutes.do(scheduled_job)
-    
     while True:
         schedule.run_pending()
         time.sleep(60)
