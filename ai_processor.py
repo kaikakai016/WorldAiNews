@@ -1,7 +1,8 @@
-import openai
-from config import OPENAI_API_KEY, NEUTRALITY_RULES
+import os
+from groq import Groq
+from config import NEUTRALITY_RULES
 
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def process_news_item(news_item):
     """Process a single news item through AI for neutral summarization"""
@@ -29,7 +30,7 @@ Format your response EXACTLY like this:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": NEUTRALITY_RULES},
                 {"role": "user", "content": prompt}
@@ -68,7 +69,7 @@ Sources: [source1, source2, source3]
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": "You are a neutral news analyst. Be concise and factual."},
                 {"role": "user", "content": prompt}
