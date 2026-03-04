@@ -25,6 +25,12 @@ def make_hash(title):
 def filter_new_news(all_news, posted):
     return [item for item in all_news if make_hash(item['title']) not in posted]
 
+def pick_image(news_group):
+    for item in news_group:
+        if item.get('image'):
+            return item['image']
+    return None
+
 async def run_news_cycle():
     print("Starting news cycle...")
     posted = load_posted()
@@ -49,7 +55,8 @@ async def run_news_cycle():
             print("Analyzing story by " + str(len(group)) + " sources: " + group[0]['title'][:50])
             analyzed = analyze_story_group(group)
             if analyzed:
-                await publish_to_channel(analyzed)
+                image = pick_image(group)
+                await publish_to_channel(analyzed, image_url=image)
                 for item in group:
                     posted.add(make_hash(item['title']))
                 published_count += 1
@@ -60,7 +67,8 @@ async def run_news_cycle():
             print("Processing: " + news_item['title'][:50])
             processed = process_news_item(news_item)
             if processed:
-                await publish_to_channel(processed)
+                image = news_item.get('image')
+                await publish_to_channel(processed, image_url=image)
                 posted.add(make_hash(news_item['title']))
                 published_count += 1
                 await asyncio.sleep(5)
