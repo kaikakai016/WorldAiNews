@@ -15,7 +15,7 @@ def fetch_rss_news():
             for entry in feed.entries[:3]:  # Top 3 from each source
                 news_item = {
                     'title': entry.get('title', ''),
-                    'summary': entry.get('summary', entry.get('description', '')), 
+                    'summary': entry.get('summary', entry.get('description', '')),
                     'link': entry.get('link', ''),
                     'source': source_name,
                     'published': entry.get('published', '')
@@ -84,13 +84,11 @@ def group_similar_news(all_news, similarity_threshold=0.3, min_sources=2):
             if j <= i or j in used_indices:
                 continue
             
-            # Skip if same source
             if item['source'] == other_item['source']:
                 continue
             
             keywords_j = extract_keywords(other_item['title'])
             
-            # Check keyword overlap
             if len(keywords_i) > 0 and len(keywords_j) > 0:
                 overlap = len(keywords_i & keywords_j) / min(len(keywords_i), len(keywords_j))
             else:
@@ -106,7 +104,6 @@ def group_similar_news(all_news, similarity_threshold=0.3, min_sources=2):
             groups.append(group)
             used_indices.add(i)
     
-    # Sort by number of sources (most covered first)
     groups.sort(key=lambda g: len(g), reverse=True)
     return groups
 
