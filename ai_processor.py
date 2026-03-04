@@ -30,7 +30,7 @@ Format your response EXACTLY like this:
 
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": NEUTRALITY_RULES},
                 {"role": "user", "content": prompt}
@@ -69,7 +69,7 @@ Sources: [source1, source2, source3]
 
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": "You are a neutral news analyst. Be concise and factual."},
                 {"role": "user", "content": prompt}
