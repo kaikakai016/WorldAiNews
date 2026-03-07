@@ -4,8 +4,9 @@ import asyncio
 import json
 import os
 import hashlib
+from datetime import datetime
 from news_fetcher import fetch_all_news, group_similar_news
-from ai_processor import analyze_story_group, analyze_single_news
+from ai_processor import analyze_story_group
 from publisher import publish_to_channel
 from config import POST_INTERVAL_MINUTES
 
@@ -30,12 +31,22 @@ def make_hash(title):
 def filter_new_news(all_news, posted):
     return [item for item in all_news if make_hash(item['title']) not in posted]
 
+def get_topic_key(title):
+    """Извлекает ключевую тему из заголовка"""
+    words = title.lower().split()
+    # Ищем ключевые слова
+    key_topics = ['иран', 'китай', 'россия', 'сша', 'украина', 'война', 'конфликт']
+    for word in words:
+        for topic in key_topics:
+            if topic in word:
+                return topic
+    return words[0] if words else 'новости'
+
 async def run_news_cycle():
-    print("\n" + "="*50)
-    print("🔄 НАЧАЛО ЦИКЛА")
+    print(f"\n{'='*50}")
+    print(f"🔄 ЦИКЛ НАЧАЛСЯ: {datetime.now().strftime('%H:%M:%S')}")
     
     posted = load_posted()
-    print(f"📚 Уже опубликовано: {len(posted)} тем")
     
     # 1. Собираем новости
     all_news = fetch_all_news()
@@ -45,55 +56,62 @@ async def run_news_cycle():
     
     # 2. Фильтруем новые
     new_news = filter_new_news(all_news, posted)
-    print(f"🆕 Новых: {len(new_news)}")
+    print(f"📰 Новых: {len(new_news)}")
     
     if len(new_news) < 5:
-        print("⏸️ Мало новых новостей, ждем...")
+        print("⏸️ Мало новых новостей")
         return
     
     # 3. Группируем похожие
     groups = group_similar_news(new_news)
+    print(f"📊 Найдено групп: {len(groups)}")
     
-    if not groups:
-        print("❌ Нет тем, подтвержденных несколькими источниками")
-        return
+    # 4. Отбираем лучшие группы (не повторяющиеся)
+    published_count = 0
+    posted_topics_today = set()
     
-    # 4. Берем топ-1 группу (самую обсуждаемую)
-    best_group = groups[0]
-    print(f"🎯 Лучшая тема: {best_group[0]['title'][:50]}...")
-    print(f"📊 Подтверждена {len(best_group)} источниками")
-    
-    # 5. ИИ пишет пост
-    post = analyze_story_group(best_group)
-    
-    if post:
-        # 6. Публикуем
-        success = await publish_to_channel(post)
+    for group in groups[:3]:  # берем топ-3 группы
+        # Проверяем, не публиковали ли уже такую тему сегодня
+        topic = get_topic_key(group[0]['title'])
+        if topic in posted_topics_today:
+            print(f"⏭️ Тема '{topic}' уже была сегодня")
+            continue
         
-        if success:
-            # 7. Помечаем как опубликованные
-            for item in best_group:
-                posted.add(make_hash(item['title']))
-            save_posted(posted)
-            print("✅ Цикл завершен успешно")
-    else:
-        print("❌ ИИ не смог написать пост")
+        print(f"✍️ Пишу пост на тему: {topic}")
+        post = analyze_story_group(group)
+        
+        if post:
+            # Проверяем качество поста
+            if len(post.split('.')) >= 2:  # минимум 2 предложения
+                await publish_to_channel(post)
+                
+                # Помечаем как опубликованные
+                for item in group:
+                    posted.add(make_hash(item['title']))
+                
+                posted_topics_today.add(topic)
+                published_count += 1
+                print(f"✅ Опубликован пост #{published_count}")
+                
+                # Ждем между постами
+                await asyncio.sleep(30)
+            else:
+                print("❌ Пост слишком короткий")
+        else:
+            print("❌ Не удалось сгенерировать пост")
     
-    print("="*50)
+    save_posted(posted)
+    print(f"🎯 Цикл завершен. Опубликовано: {published_count}")
 
 def scheduled_job():
     asyncio.run(run_news_cycle())
 
 def main():
-    print("🚀 WORLD AI NEWS — ИИ-ЖУРНАЛИСТ")
-    print(f"⏰ Публикация каждые {POST_INTERVAL_MINUTES} минут")
-    print("📡 Режим: только проверенные факты (минимум 2 источника)")
-    print("🤖 Стиль: холодный анализ от ИИ\n")
+    print("🚀 WORLD AI NEWS ЗАПУЩЕН")
+    print(f"⏰ Интервал: {POST_INTERVAL_MINUTES} минут")
+    print("📋 Режим: качественные посты, без повторов\n")
     
-    # Первый запуск сразу
     scheduled_job()
-    
-    # Планируем следующие
     schedule.every(POST_INTERVAL_MINUTES).minutes.do(scheduled_job)
     
     while True:
