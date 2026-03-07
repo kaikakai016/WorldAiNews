@@ -24,7 +24,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # Интервал публикации
 POST_INTERVAL_MINUTES = int(os.getenv("POST_INTERVAL_MINUTES", "30"))
 
-# ✅ ПРОВЕРЕННЫЕ RSS-ИСТОЧНИКИ (22 шт.)
+# ✅ РАБОЧИЕ RSS-ИСТОЧНИКИ (18 шт.)
 RSS_FEEDS = [
     # Великобритания (3)
     "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -36,20 +36,16 @@ RSS_FEEDS = [
     "https://feeds.feedburner.com/time/world",
     "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
 
-    # Международные (3)
-    "https://feeds.reuters.com/reuters/worldNews",
+    # Международные (2)
     "https://www.aljazeera.com/xml/rss/all.xml",
-    "https://apnews.com/apf-worldnews",
-
+    
     # Европа (3)
     "https://rss.dw.com/rdf/rss-en-world",
     "https://www.france24.com/en/rss",
-    "https://www.bbc.com/portuguese/rss.xml",
 
-    # Азия (5)
+    # Азия (4)
     "https://www3.nhk.or.jp/rss/news/cat6.xml",
     "https://feeds.feedburner.com/ndtvnews-world-news",
-    "https://koreajoongangdaily.joins.com/rss/feeds/worldnews.xml",
     "http://www.xinhuanet.com/english/rss/worldrss.xml",
     "https://www.cgtn.com/subscribe/rss/section/world.xml",
 
