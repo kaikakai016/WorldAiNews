@@ -185,12 +185,17 @@ def add_to_queue(group, priority, topic):
     """Добавляет пост в очередь"""
     queue = load_queue()
     
-    queue.append({
-        'group': [{
-            'title': group[0]['title'],
+    # Преобразуем группу в формат для сохранения
+    saved_group = []
+    for item in group:
+        saved_group.append({
+            'title': item['title'],
             'source': item['source'],
-            'summary': item.get('summary', '')[:100]
-        } for item in group[:3]],
+            'summary': item.get('summary', '')[:200]
+        })
+    
+    queue.append({
+        'group': saved_group,
         'priority': priority,
         'topic': topic,
         'time_added': str(datetime.now()),
@@ -210,13 +215,29 @@ def get_next_from_queue():
     if not queue:
         return None
     
-    # Берем первый (с最高 приоритетом)
+    # Берем первый (с высоким приоритетом)
     next_post = queue[0]
     
     # Удаляем из очереди
     save_queue(queue[1:])
     
     return next_post
+
+# ========== КЛАСС ДЛЯ ВОССТАНОВЛЕНИЯ ГРУППЫ ==========
+
+class NewsItem:
+    """Класс для восстановления новости из очереди"""
+    def __init__(self, data):
+        self.title = data['title']
+        self.source = data['source']
+        self.summary = data.get('summary', '')
+        self.link = data.get('link', '')
+        self.published = data.get('published', '')
+        self.image = data.get('image', None)
+    
+    def get(self, key, default=''):
+        """Для совместимости со словарем"""
+        return getattr(self, key, default)
 
 # ========== ОСНОВНОЙ ЦИКЛ ==========
 
@@ -296,14 +317,10 @@ async def process_queue():
     
     print(f"📤 Публикую из очереди: {next_post['topic']} (приоритет {next_post['priority']})")
     
-    # Восстанавливаем группу (упрощенно)
-    class SimpleItem:
-        def __init__(self, data):
-            self.title = data['title']
-            self.source = data['source']
-            self.summary = data.get('summary', '')
-    
-    group = [SimpleItem(item) for item in next_post['group']]
+    # Восстанавливаем группу как объекты NewsItem
+    group = []
+    for item_data in next_post['group']:
+        group.append(NewsItem(item_data))
     
     # Генерируем и публикуем пост
     post = analyze_story_group(group)
@@ -329,7 +346,8 @@ async def process_queue():
         
         # Помечаем как опубликованные в posted (для истории)
         posted = load_posted()
-        posted.add(make_hash(next_post['group'][0]['title']))
+        for item in group:
+            posted.add(make_hash(item.title))
         save_posted(posted)
     else:
         print("❌ Не удалось сгенерировать пост")
