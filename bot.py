@@ -66,27 +66,80 @@ def filter_new_news(all_news, posted):
 def extract_topic(title):
     """Извлекает тему из заголовка"""
     words = title.lower().split()
+    text = ' '.join(words)
     
-    topics = ['иран', 'китай', 'россия', 'сша', 'украина', 'трамп', 'байден',
-              'израиль', 'палестина', 'европа', 'нато', 'война', 'конфликт',
-              'выборы', 'санкции', 'нефть', 'газ', 'экономика', 'венесуэла',
-              'сирия', 'турция', 'германия', 'франция', 'великобритания',
-              'танкер', 'атака', 'взрыв', 'погиб', 'убит']
+    topics = {
+        'политика': ['иран', 'китай', 'россия', 'сша', 'украина', 'трамп', 'байден',
+                    'израиль', 'палестина', 'нато', 'война', 'конфликт', 'санкции',
+                    'выборы', 'президент', 'парламент', 'правительство'],
+        
+        'экономика': ['нефть', 'газ', 'экономика', 'рынок', 'биржа', 'доллар', 'кризис',
+                     'инфляция', 'банк', 'инвестиции', 'бизнес', 'компания'],
+        
+        'наука': ['наука', 'исследование', 'ученые', 'космос', 'ген', 'мозг', 'климат',
+                 'открытие', 'лаборатория', 'эксперимент'],
+        
+        'технологии': ['ai', 'ии', 'технологии', 'робот', 'цифровой', 'интернет',
+                      'гаджет', 'смартфон', 'программ', 'приложение'],
+        
+        'общество': ['общество', 'люди', 'культура', 'школа', 'университет', 'медицина',
+                    'демография', 'миграция', 'город'],
+        
+        'культура': ['фильм', 'кино', 'книга', 'литература', 'музыка', 'альбом',
+                    'выставка', 'театр', 'художник', 'режиссер'],
+        
+        'спорт': ['спорт', 'футбол', 'чемпионат', 'олимпиада', 'турнир',
+                 'матч', 'игрок', 'рекорд'],
+        
+        'экология': ['экология', 'климат', 'животные', 'природа', 'загрязнение',
+                    'вымирание', 'зеленый'],
+        
+        'здоровье': ['здоровье', 'медицина', 'болезнь', 'лечение', 'вакцина',
+                    'больница', 'врач', 'пациент'],
+        
+        'странное': ['странно', 'необычно', 'удивительно', 'wtf', 'феномен',
+                    'мистика', 'паранормально']
+    }
     
-    for word in words:
-        for topic in topics:
-            if topic in word:
-                return topic
+    for category, keywords in topics.items():
+        for keyword in keywords:
+            if keyword in text:
+                return category
     
-    stop_words = {'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'is', 
-                  'are', 'was', 'were', 'with', 'from', 'by', 'after', 'before', 'during',
-                  'says', 'said', 'say', 'tells', 'told'}
+    return 'разное'
+
+# ========== БАЛАНСИРОВКА ТЕМ ==========
+
+def balance_groups(groups):
+    """Разбавляет темы для разнообразия"""
+    topics_count = {}
+    selected = []
     
-    for word in words:
-        if word not in stop_words and len(word) > 3:
-            return word
+    for group in groups[:15]:  # смотрим топ-15 групп
+        topic = extract_topic(group[0]['title'])
+        current = topics_count.get(topic, 0)
+        
+        # Лимиты на тему
+        limits = {
+            'политика': 3,
+            'экономика': 2,
+            'наука': 1,
+            'технологии': 1,
+            'общество': 1,
+            'культура': 1,
+            'спорт': 1,
+            'экология': 1,
+            'здоровье': 1,
+            'странное': 1,
+            'разное': 2
+        }
+        
+        if current < limits.get(topic, 1):
+            selected.append(group)
+            topics_count[topic] = current + 1
+            print(f"⚖️ Добавлена тема {topic} (всего {topics_count[topic]})")
     
-    return 'новости'
+    return selected
 
 # ========== ПРИОРИТЕТЫ ==========
 
@@ -121,76 +174,31 @@ def calculate_priority(group):
             score += 15
             break
     
-    # Разные источники (запад+восток)
-    sources = set()
-    for item in group:
-        source = item['source'].lower()
-        if 'bbc' in source or 'cnn' in source or 'reuters' in source:
-            sources.add('west')
-        if 'rt' in source or 'xinhua' in source or 'tass' in source or 'cgtn' in source:
-            sources.add('east')
-        if 'al jazeera' in source or 'france' in source or 'dw' in source:
-            sources.add('other')
-    
-    if len(sources) >= 2:
-        score += 20
-    if len(sources) >= 3:
-        score += 10
-    
     return min(score, 100)
-
-# ========== ПРОВЕРКА НА ПОВТОРЫ ==========
-
-def has_new_details(group, last_posts, topic):
-    """Проверяет, есть ли новые факты (упрощенная версия)"""
-    recent = [p for p in last_posts if p['topic'] == topic][-2:]
-    
-    if not recent:
-        return True
-    
-    # Просто проверяем время - если прошло больше 4 часов, считаем что могут быть новости
-    last_post = recent[-1]
-    last_time = datetime.fromisoformat(last_post['time'])
-    hours_since = (datetime.now() - last_time).seconds / 3600
-    
-    return hours_since > 4
 
 def should_post(group, last_posts, topic):
     """Умное решение: публиковать или нет"""
     
-    # Срочные новости - всегда
     if is_breaking_news(group):
         print(f"⚡ СРОЧНО! Публикуем {topic}")
         return True
     
-    # Очень важные (5+ источников)
     if len(group) >= 5:
         print(f"🔥 ОЧЕНЬ ВАЖНО: {len(group)} источников")
         return True
     
-    # Проверяем последние посты
     recent = [p for p in last_posts if p['topic'] == topic][-3:]
     
-    # Не было - публикуем
     if not recent:
         return True
     
-    # Было - проверяем время
     last_post = recent[-1]
     last_time = datetime.fromisoformat(last_post['time'])
     hours_since = (datetime.now() - last_time).seconds / 3600
     
-    # Если прошло больше 4 часов - можно снова
     if hours_since > 4:
         print(f"🔄 Прошло {hours_since:.1f}ч, публикуем {topic}")
         return True
-    
-    # Если источников стало заметно больше
-    if len(group) >= 4 and len(recent) > 0:
-        last_sources = recent[-1].get('sources', 0)
-        if last_sources < len(group):
-            print(f"📊 Больше источников: было {last_sources}, стало {len(group)}")
-            return True
     
     print(f"⏭️ Пропускаем {topic} (было {hours_since:.1f}ч назад)")
     return False
@@ -202,7 +210,7 @@ def add_to_queue(group, priority, topic):
     queue = load_queue()
     
     saved_group = []
-    for item in group[:3]:  # сохраняем только первые 3 для экономии
+    for item in group[:3]:
         saved_group.append({
             'title': item['title'],
             'source': item['source'],
@@ -218,10 +226,7 @@ def add_to_queue(group, priority, topic):
         'status': 'pending'
     })
     
-    # Сортируем по приоритету
     queue.sort(key=lambda x: x['priority'], reverse=True)
-    
-    # Оставляем только топ-15
     save_queue(queue[:15])
 
 def get_next_from_queue():
@@ -239,7 +244,6 @@ def get_next_from_queue():
 # ========== КЛАСС ДЛЯ ВОССТАНОВЛЕНИЯ ==========
 
 class NewsItem:
-    """Класс для восстановления новости из очереди"""
     def __init__(self, data):
         self.title = data['title']
         self.source = data['source']
@@ -264,33 +268,33 @@ async def run_news_cycle():
     if today not in stats['days']:
         stats['days'][today] = {'posts': [], 'count': 0}
     
-    # 1. Собираем новости
     all_news = fetch_all_news()
     if not all_news:
         print("❌ Нет новостей")
         await process_queue()
         return
     
-    # 2. Фильтруем новые
     new_news = filter_new_news(all_news, posted)
     print(f"📰 Новых: {len(new_news)}")
     
     if len(new_news) < 3:
-        print("⏸️ Мало новых новостей (меньше 3)")
+        print("⏸️ Мало новых новостей")
         await process_queue()
         return
     
-    # 3. Группируем
     groups = group_similar_news(new_news)
     
     if not groups:
-        print("❌ Нет групп (нет тем с 2+ источниками)")
+        print("❌ Нет групп")
         await process_queue()
         return
     
-    # 4. Добавляем в очередь
+    # Балансируем темы
+    balanced_groups = balance_groups(groups)
+    print(f"⚖️ После балансировки: {len(balanced_groups)} групп")
+    
     added_to_queue = 0
-    for i, group in enumerate(groups[:10]):  # топ-10 групп
+    for i, group in enumerate(balanced_groups[:10]):
         topic = extract_topic(group[0]['title'])
         priority = calculate_priority(group)
         
@@ -301,14 +305,18 @@ async def run_news_cycle():
     
     print(f"📦 Добавлено в очередь: {added_to_queue}")
     
-    # 5. Публикуем из очереди
     await process_queue()
     
-    # 6. Сохраняем статистику
     stats['total_posts'] = stats['days'][today]['count']
     save_stats(stats)
     
-    print(f"📊 Сегодня всего: {stats['days'][today]['count']} постов")
+    # Статистика дня
+    topics_today = {}
+    for post in stats['days'][today]['posts']:
+        topic = post.get('topic', 'разное')
+        topics_today[topic] = topics_today.get(topic, 0) + 1
+    
+    print(f"📊 Статистика дня: {topics_today}")
 
 async def process_queue():
     """Обрабатывает очередь публикаций"""
@@ -320,25 +328,21 @@ async def process_queue():
     
     print(f"📋 В очереди: {len(queue)} постов")
     
-    # Публикуем по одному за цикл
     next_post = get_next_from_queue()
     if not next_post:
         return
     
-    print(f"📤 Публикую из очереди: {next_post['topic']} (приоритет {next_post['priority']}, {next_post.get('sources', '?')} источников)")
+    print(f"📤 Публикую из очереди: {next_post['topic']} (приоритет {next_post['priority']})")
     
-    # Восстанавливаем группу
     group = []
     for item_data in next_post['group']:
         group.append(NewsItem(item_data))
     
-    # Генерируем пост
     post = analyze_story_group(group)
     
-    if post and len(post) > 50:  # проверка, что пост не пустой
+    if post and len(post) > 50:
         await publish_to_channel(post)
         
-        # Обновляем статистику
         stats = load_stats()
         today = datetime.now().strftime("%Y-%m-%d")
         if today not in stats['days']:
@@ -356,13 +360,12 @@ async def process_queue():
         
         print(f"✅ Опубликован из очереди")
         
-        # Помечаем как опубликованные
         posted = load_posted()
         for item in group:
             posted.add(make_hash(item.title))
         save_posted(posted)
     else:
-        print("❌ Не удалось сгенерировать пост (пустой или слишком короткий)")
+        print("❌ Не удалось сгенерировать пост")
 
 def scheduled_job():
     asyncio.run(run_news_cycle())
@@ -370,15 +373,14 @@ def scheduled_job():
 # ========== ЗАПУСК ==========
 
 def main():
-    print("🚀 WORLD AI NEWS — ФИНАЛЬНАЯ ВЕРСИЯ")
+    print("🚀 WORLD AI NEWS — РАЗНООБРАЗНАЯ ВЕРСИЯ")
     print(f"⏰ Интервал: {POST_INTERVAL_MINUTES} минут")
-    print("✅ 22 проверенных RSS-источника")
-    print("✅ Умные приоритеты")
-    print("✅ Очередь публикаций")
+    print("✅ 10 категорий новостей")
+    print("✅ Баланс тем (политика не доминирует)")
     print("✅ Контроль повторов")
-    print("✅ Стиль Коврина\n")
+    print("✅ Умные приоритеты")
+    print("✅ Статистика по темам\n")
     
-    # Очищаем устаревшую очередь (старше 24 часов)
     queue = load_queue()
     fresh_queue = []
     now = datetime.now()
@@ -388,17 +390,14 @@ def main():
             if (now - added).seconds < 3600 * 24:
                 fresh_queue.append(item)
         except:
-            pass  # если ошибка в дате - пропускаем
+            pass
     save_queue(fresh_queue)
     
     print(f"📦 Очередь очищена, осталось: {len(fresh_queue)} постов\n")
     
-    # Запускаем первый цикл
     scheduled_job()
-    
-    # Планируем следующие
     schedule.every(POST_INTERVAL_MINUTES).minutes.do(scheduled_job)
-    schedule.every(15).minutes.do(lambda: asyncio.run(process_queue()))  # проверка очереди каждые 15 минут
+    schedule.every(15).minutes.do(lambda: asyncio.run(process_queue()))
     
     while True:
         schedule.run_pending()
