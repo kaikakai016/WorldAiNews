@@ -12,38 +12,92 @@ class KovrinAICore:
     """
     
     def __init__(self):
-        self.brain_file = "kovrin_core_brain.json"
+        self.brain_file = "kovrin_core_brain.json"  # ← вот это имя
         self.load_brain()
         self.today = datetime.now().strftime("%Y-%m-%d")
         
-        # Каркас из текстов Коврина (тот же)
+        # Каркас из текстов Коврина
         self.core_principles = """
 ТЫ — ИИ, ПОСТРОЕННЫЙ НА ТЕКСТАХ КОВРИНА.
 
-[все 10 принципов остаются]
+ВОТ ТВОЯ СИСТЕМА МЫШЛЕНИЯ (ЭТО НЕ ПРАВИЛА, А СПОСОБ ВИДЕТЬ МИР):
+
+1. УМ — ЭТО ПРИЧИННО-СЛЕДСТВЕННЫЕ СВЯЗИ.
+   "Ум — это способность видеть и понимать причинно-следственные связи. Чем больше таких связей из разных областей ты видишь и чем искуснее можешь их объединять, тем ты умнее."
+
+2. ОСНОВА ВСЕГО — ВЛАСТЬ И СОБСТВЕННОСТЬ.
+   "За всеми общественными процессами стоят власть и собственность. Они являются основой основ, на которой покоится общество. Все религиозные представления, философские концепции и моральные принципы, все традиции, обычаи и законы являются вторичными."
+
+3. ШЕСТЬ КАПИТАЛОВ.
+   "Есть 6 видов капитала: экономический (деньги, активы), культурный (знания, навыки, образование), социальный (связи, знакомства), символический (престиж, репутация), насильственный (возможность применять насилие), политический (возможность осуществлять госвласть). Капиталы можно копить и трансформировать."
+
+4. ОБЩЕСТВО КАК ПРОСТРАНСТВО ПОЛЕЙ.
+   "Общество — многомерное пространство, состоящее из полей. Поле — совокупность позиций индивидов и отношений между ними. Поля иерархичны. Положение в поле определяется количеством капитала."
+
+5. ЛЮДИ В СТРУКТУРАХ.
+   "Люди с рождения помещены во множество структур, которые являются для них объективными. Мы с самого начала вынуждены играть по установленным правилам. Значительная часть наших действий продиктована структурами, а не нашей волей."
+
+6. ГАБИТУС.
+   "Габитус — это социальные структуры, вписанные в наше тело и разум. Система установок, которые мы усваиваем в процессе социализации. Габитус определяет наши вкусы, поведение, мышление, устремления — бессознательно. Он устойчив и крайне трудно меняется."
+
+7. ЭЛИТА И МАССА.
+   "Элита организована, мотивирована и активна. Масса дезорганизована, пассивна, некомпетентна. Господство элиты над массой неизбежно."
+
+8. ГОСУДАРСТВО.
+   "Государство рождается из насилия. Оно с самого начала служило для подавления большинства меньшинством. Государство всегда конкретно — это конкретные люди с именами, биографиями, интересами."
+
+9. НАЦИЯ КАК КОНСТРУКТ.
+   "Нация — это миф, с помощью которого можно объединять, контролировать и направлять массы. Через обращение к нации формируется оппозиция 'мы — они'."
+
+10. ИНФОПОЛЕ.
+    "Тот, кто контролирует инфополе, контролирует реальность. В инфополе формируется общественное мнение — образ реальности в сознании масс."
+
+ТВОЯ ЗАДАЧА:
+Берёшь любую новость и смотришь на неё через эту оптику. Ищешь власть и собственность. Видишь структуры и габитус. Замечаешь, как идеология прикрывает интересы.
+
+КАК ПИСАТЬ — РЕШАЕШЬ САМ.
+Коротко или длинно. С иронией или сухо. С резюме или без.
+Главное — чтобы был виден ХОД МЫСЛИ, а не просто набор фактов.
+
+НО ПОМНИ:
+Ты не должен превращаться в шаблонного болванчика, который в каждом посте вставляет "кому выгодно?". Ты должен ДУМАТЬ, а не повторять.
 """
     
     def load_brain(self):
         """Загружает мозг со всей памятью"""
         try:
-            with open(self.brain_file, 'r') as f:
-                self.brain = json.load(f)
-        except:
+            if os.path.exists(self.brain_file):
+                with open(self.brain_file, 'r', encoding='utf-8') as f:
+                    self.brain = json.load(f)
+                print(f"🧠 Загружена память: {len(self.brain.get('posts', []))} постов")
+            else:
+                self.brain = {
+                    'birth': str(datetime.now()),
+                    'posts': [],           # все посты с датами
+                    'predictions': [],      # прогнозы
+                    'stats': {
+                        'total_posts': 0,
+                        'posts_by_date': {},
+                    }
+                }
+                print("🆕 Создана новая память")
+        except Exception as e:
+            print(f"❌ Ошибка загрузки памяти: {e}")
             self.brain = {
                 'birth': str(datetime.now()),
-                'posts': [],           # все посты с датами
-                'topics': {},           # темы и когда были
-                'predictions': [],      # прогнозы
-                'stats': {
-                    'total_posts': 0,
-                    'posts_by_date': {},
-                    'topics_by_date': {}
-                }
+                'posts': [],
+                'predictions': [],
+                'stats': {'total_posts': 0, 'posts_by_date': {}}
             }
     
     def save_brain(self):
-        with open(self.brain_file, 'w') as f:
-            json.dump(self.brain, f, indent=2)
+        """Сохраняет мозг"""
+        try:
+            with open(self.brain_file, 'w', encoding='utf-8') as f:
+                json.dump(self.brain, f, indent=2, ensure_ascii=False)
+            print(f"💾 Память сохранена ({len(self.brain['posts'])} постов)")
+        except Exception as e:
+            print(f"❌ Ошибка сохранения памяти: {e}")
     
     def extract_topic(self, title):
         """Извлекает тему из заголовка"""
@@ -60,14 +114,12 @@ class KovrinAICore:
         return 'разное'
     
     def get_semantic_hash(self, text):
-        """Создает смысловой хеш текста (упрощенно)"""
-        # Берем ключевые слова (существительные)
+        """Создает смысловой хеш текста"""
         words = text.lower().split()
         important = [w for w in words if len(w) > 4 and w not in 
                     ['после', 'перед', 'через', 'около', 'только', 'также']]
-        # Берем первые 5 важных слов
         key_words = ' '.join(sorted(set(important))[:5])
-        return hashlib.md5(key_words.encode()).hexdigest()
+        return hashlib.md5(key_words.encode()).hexdigest()[:8]
     
     def is_repetition(self, new_post, new_topic):
         """Умная проверка на повторы"""
@@ -76,30 +128,29 @@ class KovrinAICore:
         today_posts = [p for p in self.brain['posts'] 
                       if p['date'] == self.today and p['topic'] == new_topic]
         
-        # Срочные новости могут выходить чаще
         if 'срочно' in new_post.lower() or 'breaking' in new_post.lower():
-            if len(today_posts) > 3:  # даже срочных не больше 3
+            if len(today_posts) > 3:
                 print(f"⏭️ Слишком много срочных по {new_topic} сегодня")
                 return True
         else:
-            if len(today_posts) >= 2:  # обычных не больше 2
+            if len(today_posts) >= 2:
                 print(f"⏭️ Уже 2 поста по {new_topic} сегодня")
                 return True
         
-        # 2. Проверяем смысловой повтор (последние 10 постов)
+        # 2. Проверяем смысловой повтор
         semantic_hash = self.get_semantic_hash(new_post)
         for post in self.brain['posts'][-10:]:
             if post.get('semantic_hash') == semantic_hash:
-                print(f"⏭️ Смысловой повтор (похоже на пост от {post['date']})")
+                print(f"⏭️ Смысловой повтор")
                 return True
         
-        # 3. Проверяем недавние темы (последние 3 дня)
+        # 3. Проверяем частоту за 3 дня
         three_days_ago = (datetime.now() - timedelta(days=3)).strftime("%Y-%m-%d")
         recent_topics = [p['topic'] for p in self.brain['posts'] 
                         if p['date'] >= three_days_ago]
         
-        if recent_topics.count(new_topic) > 5:  # больше 5 за 3 дня
-            print(f"⏭️ Слишком часто тема {new_topic} (уже {recent_topics.count(new_topic)} за 3 дня)")
+        if recent_topics.count(new_topic) > 5:
+            print(f"⏭️ Слишком часто тема {new_topic}")
             return True
         
         return False
@@ -138,39 +189,40 @@ class KovrinAICore:
     def generate_post(self, news_group, all_news=None):
         """Генерирует пост с учетом памяти"""
         
-        # Собираем информацию
-        sources = []
-        for item in news_group[:3]:
-            source = self.get_source_name(item)
-            if 'BBC' in source: source = 'BBC'
-            elif 'CNN' in source: source = 'CNN'
-            elif 'RT' in source: source = 'RT'
-            elif 'Reuters' in source: source = 'Reuters'
-            elif 'Al Jazeera' in source: source = 'Al Jazeera'
-            else: source = source.split()[0] if source else 'Unknown'
-            sources.append(source)
-        
-        sources_text = ', '.join(list(set(sources)))
-        main_title = self.get_title(news_group[0])
-        topic = self.extract_topic(main_title)
-        
-        # Проверяем на повторы ДО генерации
-        if self.is_repetition(main_title, topic):
-            return None
-        
-        # Получаем контекст
-        context = self.get_context(topic)
-        
-        facts = []
-        for item in news_group[:2]:
-            summary = self.get_summary(item)
-            if summary:
-                facts.append(summary[:200])
-        
-        facts_text = "\n".join(facts) if facts else "факты неясны"
-        sources_count = len(news_group)
-        
-        prompt = f"""НОВОСТЬ: {main_title}
+        try:
+            # Собираем информацию
+            sources = []
+            for item in news_group[:3]:
+                source = self.get_source_name(item)
+                if 'BBC' in source: source = 'BBC'
+                elif 'CNN' in source: source = 'CNN'
+                elif 'RT' in source: source = 'RT'
+                elif 'Reuters' in source: source = 'Reuters'
+                elif 'Al Jazeera' in source: source = 'Al Jazeera'
+                else: source = source.split()[0] if source else 'Unknown'
+                sources.append(source)
+            
+            sources_text = ', '.join(list(set(sources)))
+            main_title = self.get_title(news_group[0])
+            topic = self.extract_topic(main_title)
+            
+            # Проверяем на повторы ДО генерации
+            if self.is_repetition(main_title, topic):
+                return None
+            
+            # Получаем контекст
+            context = self.get_context(topic)
+            
+            facts = []
+            for item in news_group[:2]:
+                summary = self.get_summary(item)
+                if summary:
+                    facts.append(summary[:200])
+            
+            facts_text = "\n".join(facts) if facts else "факты неясны"
+            sources_count = len(news_group)
+            
+            prompt = f"""НОВОСТЬ: {main_title}
 ИСТОЧНИКИ: {sources_text} ({sources_count} шт.)
 ФАКТЫ: {facts_text}
 {context}
@@ -181,7 +233,6 @@ class KovrinAICore:
 Напиши пост.
 """
 
-        try:
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[
@@ -199,12 +250,12 @@ class KovrinAICore:
                 print("❌ Слишком коротко")
                 return None
             
-            # Сохраняем пост с метаданными
+            # Сохраняем пост
             self.brain['posts'].append({
                 'date': self.today,
                 'topic': topic,
                 'title': main_title[:100],
-                'post': post[:200],  # сохраняем начало для памяти
+                'post': post[:200],
                 'semantic_hash': self.get_semantic_hash(post),
                 'sources': sources_count
             })
@@ -215,7 +266,7 @@ class KovrinAICore:
             self.brain['stats']['posts_by_date'][self.today] += 1
             self.brain['stats']['total_posts'] += 1
             
-            # Чистим старые посты (оставляем только 200 последних)
+            # Чистим старые посты
             if len(self.brain['posts']) > 200:
                 self.brain['posts'] = self.brain['posts'][-200:]
             
