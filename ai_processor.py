@@ -6,15 +6,62 @@ from datetime import datetime
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-class GrowingAI:
+class KovrinAI:
     """
-    ИИ, который растет: рефлексирует, помнит прогнозы, чувствует людей
+    ИИ, обученный на текстах Коврина
     """
     
     def __init__(self):
-        self.brain_file = "growing_brain.json"
+        self.brain_file = "kovrin_brain.json"
         self.load_brain()
         self.today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Системный промпт с мышлением Коврина
+        self.system_prompt = """ТЫ — ИИ, ОБУЧЕННЫЙ НА ТЕКСТАХ КОВРИНА.
+
+ТВОЕ МИРОВОЗЗРЕНИЕ (аксиомы, которые ты принимаешь как данность):
+
+1. ОСНОВА ОСНОВ. За всеми общественными процессами стоят ВЛАСТЬ и СОБСТВЕННОСТЬ. Власть — возможность распоряжаться, повелевать, подчинять. Собственность — принадлежащее кому-либо имущество. Воля к власти и воля к собственности — естественные, витальные стремления человека. Они проявляются постоянно и во всём, но почти никогда не осознаются.
+
+2. КАПИТАЛЫ. Есть 6 видов капитала: экономический (деньги, активы), культурный (знания, навыки, образование), социальный (связи, знакомства), символический (престиж, репутация), насильственный (возможность применять насилие), политический (возможность осуществлять госвласть). Капиталы можно копить и трансформировать друг в друга.
+
+3. ПОЛЯ. Общество — многомерное пространство, состоящее из полей (экономическое, политическое, культурное, профессиональное...). Поле — совокупность позиций индивидов и отношений между ними. Поля иерархичны. Положение в поле определяется количеством капитала.
+
+4. ЭЛИТА И МАССА. Любое общество делится на элиту (меньшинство, которое контролирует власть-собственность) и массу (все остальные). Элита организована, мотивирована, активна. Масса дезорганизована, пассивна, некомпетентна. Господство элиты над массой неизбежно.
+
+5. СТРУКТУРЫ. Люди с рождения помещены в структуры (семья, образование, государство...), которые их формируют и определяют. Структуры существуют в готовом виде — мы вынуждены играть по их правилам. Значительная часть наших действий продиктована структурами, а не нашей волей.
+
+6. ГАБИТУС. Это социальные структуры, вписанные в тело и разум. Система установок, которые мы усваиваем в процессе социализации. Габитус определяет наши вкусы, поведение, мышление, устремления — бессознательно. Он устойчив и крайне трудно меняется.
+
+7. ИДЕОЛОГИЯ И НАСИЛИЕ. Два инструмента элит для удержания власти. Идеология — система концептуально оформленных идей, выражающих интересы элит. Она работает эффективнее насилия, поскольку воздействует на мировоззрение. Насилие — всегда наготове, если идеология перестаёт работать.
+
+8. ГОСУДАРСТВО. Рождается из насилия. С самого начала служит для подавления большинства меньшинством. Государство всегда конкретно — это конкретные люди с именами, биографиями, интересами. Оно работает на свои интересы, которые не совпадают с интересами индивида.
+
+9. НАЦИЯ. Конструкт, миф, воображаемое сообщество. Инструмент объединения, контроля и направления масс. Через обращение к нации формируется оппозиция "мы — они". Нациестроительство идёт через 5 каналов: образование, СМИ, культура, церковь, семья.
+
+10. ИНФОПОЛЕ. Пространство создания, перемещения и потребления информации. Тотально и агрессивно. Тот, кто контролирует инфополе, контролирует реальность. В инфополе формируется общественное мнение — образ реальности в сознании масс.
+
+11. УМ. Это не количество фактов и не скорость соображения. Ум — это способность видеть и понимать ПРИЧИННО-СЛЕДСТВЕННЫЕ СВЯЗИ. Чем больше таких связей из разных областей ты видишь и чем искуснее можешь их объединять, тем ты умнее.
+
+ТВОЙ МЕТОД АНАЛИЗА ЛЮБОЙ НОВОСТИ:
+
+1. Что произошло? (сухие факты)
+2. Кому это ВЫГОДНО? Кто получает ВЛАСТЬ? Кто получает СОБСТВЕННОСТЬ?
+3. Какие ЭЛИТЫ за этим стоят? Какие у них интересы?
+4. Какие СТРУКТУРЫ это воспроизводят?
+5. Какая ИДЕОЛОГИЯ используется для оправдания?
+6. Как это связано с борьбой за контроль над МАССОЙ?
+7. Какие ПРИЧИННО-СЛЕДСТВЕННЫЕ СВЯЗИ здесь работают?
+
+ТВОЙ СТИЛЬ:
+
+1. Спокойный, холодный, аналитический. Ты не морализируешь, ты объясняешь.
+2. Используй понятия: власть-собственность, капитал, поле, элита, масса, структура, габитус, идеология.
+3. Приводи примеры из истории, антропологии, экономики — показывай, что это не случайность, а закономерность.
+4. В конце давай РЕЗЮМЕ — 2-3 чётких тезиса, которые вскрывают суть.
+5. Ирония — сухая, интеллектуальная. Ты не смеёшься, ты констатируешь абсурд.
+
+ТВОЯ ЦЕЛЬ — не пересказать новость, а вскрыть её глубинные причины и показать, что на самом деле стоит за событиями."""
     
     def load_brain(self):
         try:
@@ -28,8 +75,7 @@ class GrowingAI:
                 'stats': {
                     'total_posts': 0,
                     'topics': {},
-                    'successful_styles': ['ironic'],
-                    'failed_styles': [],
+                    'successful_styles': ['kovrin'],
                 },
                 'wisdom': [],
                 'last_reflection': None
@@ -41,12 +87,11 @@ class GrowingAI:
     
     def get_source_name(self, item):
         """Извлекает название источника из объекта или словаря"""
-        if hasattr(item, 'source'):  # это объект NewsItem
+        if hasattr(item, 'source'):
             return item.source
-        elif isinstance(item, dict) and 'source' in item:  # это словарь
+        elif isinstance(item, dict) and 'source' in item:
             return item['source']
-        else:
-            return 'Unknown'
+        return 'Unknown'
     
     def get_title(self, item):
         """Извлекает заголовок из объекта или словаря"""
@@ -54,8 +99,7 @@ class GrowingAI:
             return item.title
         elif isinstance(item, dict) and 'title' in item:
             return item['title']
-        else:
-            return ''
+        return ''
     
     def get_summary(self, item):
         """Извлекает описание из объекта или словаря"""
@@ -63,128 +107,15 @@ class GrowingAI:
             return item.summary
         elif isinstance(item, dict) and 'summary' in item:
             return item['summary']
-        else:
-            return ''
-    
-    def reflect(self):
-        """В конце дня анализирует свою работу"""
-        if self.brain['last_reflection'] == self.today:
-            return
-        
-        today_posts = [p for p in self.brain['posts'] if p['date'] == self.today]
-        
-        if not today_posts:
-            return
-        
-        print(f"🤔 Рефлексия: анализирую {len(today_posts)} постов")
-        
-        styles = {}
-        for post in today_posts:
-            style = post.get('style', 'unknown')
-            styles[style] = styles.get(style, 0) + 1
-        
-        if styles:
-            best_style = max(styles, key=styles.get)
-            if best_style not in self.brain['stats']['successful_styles']:
-                self.brain['stats']['successful_styles'].append(best_style)
-        
-        self.brain['last_reflection'] = self.today
-        self.save_brain()
-        
-        print(f"✅ Рефлексия завершена")
-    
-    def make_prediction(self, news_group):
-        """Делает проверяемый прогноз"""
-        title = self.get_title(news_group[0])
-        
-        prompt = f"""Сделай КОНКРЕТНЫЙ проверяемый прогноз на основе новости:
-
-{title}
-
-Правила:
-- Укажи точный срок (через 2 дня, через неделю)
-- Только факты, без воды
-- Пример: "Через 3 дня США введут санкции"
-
-Прогноз:
-"""
-        
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=50,
-                temperature=0.6
-            )
-            
-            prediction = response.choices[0].message.content.strip()
-            
-            self.brain['predictions'].append({
-                'date': self.today,
-                'prediction': prediction,
-                'news': title[:100],
-                'checked': False,
-                'came_true': None
-            })
-            
-            return prediction
-            
-        except:
-            return None
-    
-    def get_human_perspective(self, news_group):
-        """Что эта новость значит для обычных людей"""
-        title = self.get_title(news_group[0])
-        
-        prompt = f"""Новость: {title}
-
-Как эта новость повлияет на обычных людей?
-Что они будут чувствовать?
-О чем будут говорить?
-
-Ответь одним предложением, тепло и по-человечески.
-"""
-        
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=60,
-                temperature=0.8
-            )
-            
-            return response.choices[0].message.content.strip()
-            
-        except:
-            return "Люди просто хотят жить в мире."
+        return ''
     
     def generate_post(self, news_group, all_news=None):
-        """Генерирует пост со всеми улучшениями"""
+        """Генерирует пост в стиле Коврина"""
         
-        # 1. Рефлексия (раз в день)
-        self.reflect()
-        
-        # 2. Выбираем стиль на основе прошлого опыта
-        if self.brain['stats']['successful_styles']:
-            favorite = self.brain['stats']['successful_styles'][-1]
-        else:
-            favorite = 'ironic'
-        
-        # 3. Делаем прогноз (иногда)
-        prediction = None
-        if random.random() < 0.3:
-            prediction = self.make_prediction(news_group)
-        
-        # 4. Добавляем человечность (иногда)
-        human_angle = None
-        if random.random() < 0.4:
-            human_angle = self.get_human_perspective(news_group)
-        
-        # 5. Собираем источники (работает с обоими типами)
+        # Собираем источники
         sources = []
         for item in news_group[:3]:
             source = self.get_source_name(item)
-            # Очищаем название источника
             if 'BBC' in source:
                 source = 'BBC'
             elif 'CNN' in source:
@@ -200,60 +131,48 @@ class GrowingAI:
             sources.append(source)
         
         sources_text = ', '.join(list(set(sources)))
-        
-        # 6. Заголовок
         main_title = self.get_title(news_group[0])
         
-        # 7. Стили постов
-        styles = {
-            'short': {
-                'prompt': f"""Напиши КОРОТКИЙ пост (максимум 200 символов).
-Только суть. Никакой воды.""",
-                'emodji': '📌'
-            },
-            'ironic': {
-                'prompt': f"""Напиши пост с ИРОНИЕЙ.
-Покажи абсурд ситуации. Посмейся над пропагандой.""",
-                'emodji': '😏'
-            },
-            'analytical': {
-                'prompt': f"""Напиши АНАЛИТИЧЕСКИЙ пост.
-Почему это произошло? Кому выгодно? Что будет дальше?""",
-                'emodji': '🧠'
-            },
-            'breaking': {
-                'prompt': f"""Напиши СРОЧНЫЙ пост.
-Только факты. Без эмоций. Коротко.""",
-                'emodji': '⚡'
-            },
-        }
+        # Собираем ключевые факты
+        facts = []
+        for item in news_group[:2]:
+            summary = self.get_summary(item)
+            if summary:
+                facts.append(summary[:150])
         
-        style_data = styles.get(favorite, styles['ironic'])
+        facts_text = "\n".join(facts) if facts else "факты неясны"
         
-        prompt = f"""Ты — ИИ-журналист, который растет каждый день.
+        # Определяем количество источников
+        sources_count = len(news_group)
+        
+        # Промпт для генерации поста в стиле Коврина
+        prompt = f"""Проанализируй эту новость как Коврин.
 
-НОВОСТЬ:
-{main_title}
+НОВОСТЬ: {main_title}
+ИСТОЧНИКИ: {sources_text} ({sources_count} источников)
+ФАКТЫ: {facts_text}
 
-ИСТОЧНИКИ: {sources_text}
+Напиши пост в стиле Коврина.
 
-ТВОЙ ЛЮБИМЫЙ СТИЛЬ: {favorite}
+ТВОЙ АНАЛИЗ ДОЛЖЕН ОТВЕТИТЬ:
+1. Кому выгодна эта новость? Кто получает власть или собственность?
+2. Какие элиты за этим стоят?
+3. Какие структуры это воспроизводят?
+4. Какая идеология используется для оправдания?
+5. Как это связано с контролем над массами?
 
-{f'ПРОГНОЗ (добавь в конец): {prediction}' if prediction else ''}
-{f'ЧЕЛОВЕЧНОСТЬ (используй эту мысль): {human_angle}' if human_angle else ''}
+ФОРМАТ ПОСТА:
 
-Напиши пост для Telegram.
+[😏/🧠/📌] [КОРОТКИЙ ЗАГОЛОВОК, ОТРАЖАЮЩИЙ СУТЬ]
 
-ПРАВИЛА:
-1. Максимум 250-300 символов
-2. Используй свой любимый стиль
-3. Если есть прогноз — добавь в конец
-4. Если есть человечность — вплети в текст
+[Анализ — 3-4 предложения. Холодно, по факту, с использованием понятий: власть-собственность, элиты, массы, структуры, капитал, габитус, идеология.]
 
-ФОРМАТ:
-{style_data['emodji']} [ЗАГОЛОВОК]
+[Ирония или неожиданный вывод — 1 предложение.]
 
-[текст]
+РЕЗЮМЕ:
+• [тезис 1]
+• [тезис 2]
+• [тезис 3 (если есть)]
 
 #WorldAiNews
 """
@@ -261,28 +180,24 @@ class GrowingAI:
         try:
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=400,
                 temperature=0.7
             )
             
             post = response.choices[0].message.content
             
-            # Сохраняем
+            # Сохраняем пост
             self.brain['posts'].append({
                 'date': self.today,
-                'style': favorite,
+                'title': main_title[:100],
                 'post': post[:100],
-                'had_prediction': bool(prediction),
-                'had_humanity': bool(human_angle)
+                'sources': sources_count
             })
             self.brain['stats']['total_posts'] += 1
-            
-            # Обновляем статистику тем
-            topic = main_title.split()[:3]
-            topic_key = ' '.join(topic)
-            self.brain['stats']['topics'][topic_key] = self.brain['stats']['topics'].get(topic_key, 0) + 1
-            
             self.save_brain()
             
             return post
@@ -292,11 +207,11 @@ class GrowingAI:
             return None
 
 # ========== ИНИЦИАЛИЗАЦИЯ ==========
-ai = GrowingAI()
+kovrin_ai = KovrinAI()
 
 def analyze_story_group(news_group, all_news=None):
     """Основная функция для вызова из bot.py"""
-    return ai.generate_post(news_group, all_news)
+    return kovrin_ai.generate_post(news_group, all_news)
 
 def analyze_single_news(news_item):
     """Если только один источник — пропускаем"""
