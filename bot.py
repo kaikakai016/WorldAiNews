@@ -179,18 +179,40 @@ def calculate_priority(group):
 def should_post(group, last_posts, topic):
     """Умное решение: публиковать или нет"""
     
+    # Срочные новости - всегда
     if is_breaking_news(group):
         print(f"⚡ СРОЧНО! Публикуем {topic}")
         return True
     
+    # Очень важные (5+ источников)
     if len(group) >= 5:
         print(f"🔥 ОЧЕНЬ ВАЖНО: {len(group)} источников")
         return True
     
-    recent = [p for p in last_posts if p['topic'] == topic][-3:]
+    # Проверяем, сколько ПОСТОВ реально опубликовано сегодня
+    today = datetime.now().strftime("%Y-%m-%d")
+    stats = load_stats()
+    today_posts = stats.get('days', {}).get(today, {}).get('posts', [])
     
-    if not recent:
-        return True
+    # Считаем посты на эту тему сегодня
+    topic_posts_today = [p for p in today_posts if p.get('topic') == topic]
+    
+    # Если уже есть 2 поста на тему сегодня - пропускаем
+    if len(topic_posts_today) >= 2:
+        print(f"⏭️ Уже 2 поста по {topic} сегодня")
+        return False
+    
+    # Если был пост меньше 4 часов назад - пропускаем
+    if topic_posts_today:
+        last_post = topic_posts_today[-1]
+        last_time = datetime.fromisoformat(last_post['time'])
+        hours_since = (datetime.now() - last_time).seconds / 3600
+        
+        if hours_since < 4:
+            print(f"⏭️ Последний пост по {topic} был {hours_since:.1f}ч назад")
+            return False
+    
+    return True
     
     last_post = recent[-1]
     last_time = datetime.fromisoformat(last_post['time'])
