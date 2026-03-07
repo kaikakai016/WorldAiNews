@@ -3,6 +3,7 @@ from groq import Groq
 import json
 from datetime import datetime, timedelta
 import hashlib
+import re
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
@@ -16,7 +17,7 @@ class NewsAI:
         self.load_brain()
         self.today = datetime.now().strftime("%Y-%m-%d")
         
-        # Система мышления (без упоминаний Коврина)
+        # Система мышления
         self.core_principles = """
 ТЫ — АНАЛИТИЧЕСКИЙ ИИ, КОТОРЫЙ ВИДИТ СУТЬ.
 
@@ -55,9 +56,21 @@ class NewsAI:
 ТВОЯ ЗАДАЧА:
 Берёшь любую новость и смотришь на неё через эту оптику. Ищешь власть и собственность. Видишь структуры и установки. Замечаешь, как идеология прикрывает интересы.
 
-КАК ПИСАТЬ — РЕШАЕШЬ САМ.
-Коротко или длинно. С иронией или сухо. С резюме или без.
-Главное — чтобы был виден ХОД МЫСЛИ, а не просто набор фактов.
+ВАЖНЫЕ ПРАВИЛА ДЛЯ TELEGRAM:
+
+1. ДЛИНА ПОСТА — максимум 200 слов (примерно 3-4 абзаца). Если получается длиннее — сокращай без потери смысла.
+
+2. ЗАГОЛОВОК должен цеплять. Не "Анализ ситуации в Непале", а "Непал: молодёжь берёт власть". Коротко, ёмко, с интригой.
+
+3. ПОСЛЕДНЯЯ ФРАЗА — самая важная. Это должен быть вывод, который запоминается. Можно с иронией, можно неожиданный, можно хлёсткий. Главное — чтобы хотелось процитировать.
+
+4. СТРУКТУРА:
+   - Заголовок (цепляющий)
+   - 1 абзац: суть события
+   - 2 абзац: анализ (власть, структуры, капиталы)
+   - 3 абзац: вывод/ирония (самое важное)
+
+Но это не жесткий шаблон. Иногда можно экспериментировать.
 """
     
     def load_brain(self):
@@ -124,6 +137,10 @@ class NewsAI:
                     ['после', 'перед', 'через', 'около', 'только', 'также']]
         key_words = ' '.join(sorted(set(important))[:5])
         return hashlib.md5(key_words.encode()).hexdigest()[:8]
+    
+    def count_words(self, text):
+        """Считает количество слов в тексте"""
+        return len(text.split())
     
     def is_repetition(self, new_post, new_topic):
         """Умная проверка на повторы"""
@@ -236,7 +253,12 @@ class NewsAI:
 - структур и установок (какие силы действуют?)
 - идеологии (что прикрывает интересы?)
 
-Напиши пост. Максимум 3-4 абзаца. В конце — короткий вывод.
+Напиши пост для Telegram.
+
+ВАЖНО:
+1. Заголовок должен цеплять (коротко, ярко, с интригой)
+2. Максимум 200 слов (примерно 3-4 абзаца)
+3. Последняя фраза — вывод, который запоминается
 """
 
             response = client.chat.completions.create(
@@ -245,13 +267,17 @@ class NewsAI:
                     {"role": "system", "content": self.core_principles},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=400,
+                max_tokens=350,
                 temperature=0.8
             )
             
             post = response.choices[0].message.content
             
-            if len(post) < 50:
+            # Проверка длины
+            word_count = self.count_words(post)
+            if word_count > 250:  # чуть больше 200 с запасом
+                print(f"✂️ Пост длинноват ({word_count} слов), но оставляем")
+            elif word_count < 50:
                 print("❌ Слишком коротко")
                 return None
             
@@ -261,6 +287,7 @@ class NewsAI:
                 'topic': topic,
                 'title': main_title[:100],
                 'post': post[:200],
+                'word_count': word_count,
                 'semantic_hash': self.get_semantic_hash(post),
                 'sources': sources_count
             })
@@ -275,6 +302,8 @@ class NewsAI:
                 self.brain['posts'] = self.brain['posts'][-200:]
             
             self.save_brain()
+            
+            print(f"📝 Пост готов: {word_count} слов")
             return post
             
         except Exception as e:
