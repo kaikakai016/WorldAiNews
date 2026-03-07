@@ -1,8 +1,7 @@
 import feedparser
-import requests
 import socket
 from concurrent.futures import ThreadPoolExecutor
-from config import RSS_FEEDS, NEWS_API_KEY
+from config import RSS_FEEDS
 from difflib import SequenceMatcher
 
 def get_image_from_entry(entry):
@@ -55,31 +54,8 @@ def fetch_single_feed(feed_url):
         print(f"❌ Ошибка RSS {feed_url}: {str(e)}")
         return []
 
-def fetch_newsapi_headlines():
-    """Загружает новости через NewsAPI"""
-    if not NEWS_API_KEY:
-        return []
-    try:
-        url = "https://newsapi.org/v2/top-headlines?language=en&pageSize=10&apiKey=" + NEWS_API_KEY
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        articles = []
-        for article in data.get('articles', []):
-            articles.append({
-                'title': article.get('title', ''),
-                'summary': article.get('description', '')[:300],
-                'link': article.get('url', ''),
-                'source': article.get('source', {}).get('name', 'NewsAPI'),
-                'published': article.get('publishedAt', ''),
-                'image': article.get('urlToImage')
-            })
-        return articles
-    except Exception as e:
-        print(f"❌ NewsAPI error: {e}")
-        return []
-
 def fetch_all_news():
-    """Собирает ВСЕ новости из всех источников"""
+    """Собирает ВСЕ новости из RSS источников"""
     all_news = []
     
     # RSS ленты
@@ -92,10 +68,7 @@ def fetch_all_news():
             except Exception as e:
                 print(f"⏱️ Таймаут: {futures[future]}")
     
-    # NewsAPI
-    all_news.extend(fetch_newsapi_headlines())
-    
-    print(f"📰 Всего собрано: {len(all_news)} новостей")
+    print(f"📰 Всего собрано: {len(all_news)} новостей из {len(RSS_FEEDS)} источников")
     return all_news
 
 def calculate_similarity(title1, title2):
@@ -126,7 +99,7 @@ def extract_topic(title):
     
     # Ключевые слова для определения темы
     key_topics = ['иран', 'китай', 'россия', 'сша', 'украина', 'война', 
-                  'конфликт', 'танкер', 'атака', 'выборы', 'санкции']
+                  'конфликт', 'танкер', 'атака', 'выборы', 'санкции', 'израиль']
     
     for word in words:
         for topic in key_topics:
@@ -143,7 +116,7 @@ def extract_topic(title):
 
 def group_similar_news(news_list, min_sources=2):
     """
-    Группирует похожие новости (улучшенная версия)
+    Группирует похожие новости
     """
     groups = []
     used = set()
@@ -196,7 +169,3 @@ def group_similar_news(news_list, min_sources=2):
 # Для обратной совместимости
 def get_all_news():
     return fetch_all_news()
-
-def group_similar_news_old(news_list, similarity_threshold=0.3, min_sources=2):
-    """Старая версия для совместимости"""
-    return group_similar_news(news_list, min_sources)
