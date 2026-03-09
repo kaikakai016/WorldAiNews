@@ -210,6 +210,9 @@ class NewsAI:
     def generate_post(self, news_group, all_news=None):
         """Генерирует пост"""
         
+        # ПРИНУДИТЕЛЬНАЯ ГЕНЕРАЦИЯ (временная)
+print(f"🎯 Пробую сгенерировать пост для: {main_title[:50]}")
+
         try:
             # Собираем информацию
             sources = []
