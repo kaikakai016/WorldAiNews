@@ -176,13 +176,10 @@ def calculate_priority(group):
     
     return min(score, 100)
 
-def should_post(group, last_posts, topic):
-    """Умное решение: публиковать или нет"""
-    
-    # Срочные новости - всегда
-    if is_breaking_news(group):
-        print(f"⚡ СРОЧНО! Публикуем {topic}")
-        return True
+def def should_post(group, last_posts, topic):
+    """ВРЕМЕННАЯ: публикуем всё подряд"""
+    print(f"✅ ВРЕМЕННО: публикуем {topic}")
+    return True
     
     # Очень важные (5+ источников)
     if len(group) >= 5:
