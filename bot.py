@@ -176,8 +176,8 @@ def calculate_priority(group):
     
     return min(score, 100)
 
-def def should_post(group, last_posts, topic):
-    """ВРЕМЕННАЯ: публикуем всё подряд"""
+def should_post(group, last_posts, topic):
+    """ВРЕМЕННАЯ: публикуем всё подряд для теста"""
     print(f"✅ ВРЕМЕННО: публикуем {topic}")
     return True
     
